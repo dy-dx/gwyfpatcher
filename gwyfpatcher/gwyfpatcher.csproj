@@ -28,8 +28,24 @@
     <ExternalConsole>true</ExternalConsole>
     <PlatformTarget>x86</PlatformTarget>
   </PropertyGroup>
+  <PropertyGroup Condition=" '$(RunConfiguration)' == 'Default' ">
+    <StartAction>Project</StartAction>
+    <ExternalConsole>false</ExternalConsole>
+  </PropertyGroup>
   <ItemGroup>
     <Reference Include="System" />
+    <Reference Include="dnpatch">
+      <HintPath>..\deps\dnpatch.script-0.7.52\dnpatch.dll</HintPath>
+    </Reference>
+    <Reference Include="dnpatch.script">
+      <HintPath>..\deps\dnpatch.script-0.7.52\dnpatch.script.dll</HintPath>
+    </Reference>
+    <Reference Include="Newtonsoft.Json">
+      <HintPath>..\deps\dnpatch.script-0.7.52\Newtonsoft.Json.dll</HintPath>
+    </Reference>
+    <Reference Include="dnlib">
+      <HintPath>..\deps\dnpatch.script-0.7.52\dnlib.dll</HintPath>
+    </Reference>
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Program.cs" />
