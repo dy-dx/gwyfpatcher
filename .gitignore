@@ -40,3 +40,5 @@ Thumbs.db
 *.dotCover
 
 deps/**/*.dll
+deps/*
+!deps/readme.txt

@@ -3,6 +3,8 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 2012
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "gwyfpatcher", "gwyfpatcher\gwyfpatcher.csproj", "{8375DFA1-DF5B-4369-9055-5538D1EAD507}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "gwyfhelper", "gwyfhelper\gwyfhelper.csproj", "{98F6EF95-4DCF-4BF4-B1F0-E6602EF9FBCE}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x86 = Debug|x86
@@ -13,6 +15,10 @@ Global
 		{8375DFA1-DF5B-4369-9055-5538D1EAD507}.Debug|x86.Build.0 = Debug|x86
 		{8375DFA1-DF5B-4369-9055-5538D1EAD507}.Release|x86.ActiveCfg = Release|x86
 		{8375DFA1-DF5B-4369-9055-5538D1EAD507}.Release|x86.Build.0 = Release|x86
+		{98F6EF95-4DCF-4BF4-B1F0-E6602EF9FBCE}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{98F6EF95-4DCF-4BF4-B1F0-E6602EF9FBCE}.Debug|x86.Build.0 = Debug|Any CPU
+		{98F6EF95-4DCF-4BF4-B1F0-E6602EF9FBCE}.Release|x86.ActiveCfg = Release|Any CPU
+		{98F6EF95-4DCF-4BF4-B1F0-E6602EF9FBCE}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(MonoDevelopProperties) = preSolution
 		Policies = $0
