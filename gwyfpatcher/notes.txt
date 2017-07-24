@@ -1,0 +1,68 @@
+// // BallMovement
+// public void PreUpdate()
+// {
+//   if (cInput.GetButtonUp("Chat"))
+//   {
+//     this.inHole = true;
+//     this.collidingWithHole = true;
+//   }
+// }
+// 
+// public partial class BallMovement : Photon.MonoBehaviour
+// {
+//   public void PreStart()
+//   {
+//     ScriptEngine scriptEngine = Python.CreateEngine();
+//     ScriptScope ScriptScope = scriptEngine.CreateScope();
+//     string example = "output = 'hello world'";
+//     scriptEngine.CreateScriptSourceFromString(example).Execute(ScriptScope);
+//     UnityEngine.Debug.Log(ScriptScope.GetVariable<string>("output"));
+//   }
+// }
+
+// BallMovement
+using gwyfhelper;
+public void PreUpdate()
+{
+  GoFast.Update(this.hole, this.hitForce, this.preHitLocation, base.transform, this.rb, this.playerCamPivot, this.currentVelocity, this.minVelToHit, this.outOfBounds, this.onTrolley, this.initialDrag, this.sandDragToApply, this.waterDragToApply);
+  this.hole = GoFast.GetNewHole();
+  this.playerCustomProps["holeNumber"] = this.hole;
+  this.currentHoleNumber = this.hole;
+  this.hitForce = GoFast.GetNewHitForce();
+  this.preHitLocation = GoFast.GetNewPreHitLocation();
+  if (GoFast.ShouldResetToLastShot())
+  {
+    this.ResetToLastShot();
+  }
+}
+
+
+// BallMovement
+using gwyfhelper;
+public void OnGUI()
+{
+  GoFast.OnGUI();
+}
+
+// Menu
+using gwyfhelper;
+public void LateUpdate()
+{
+  GoFast.MenuLateUpdate();
+}
+
+// Menu
+using gwyfhelper;
+public partial class Menu : Photon.MonoBehaviour
+{
+  public void PreUpdate()
+  {
+    GoFast.MenuPreUpdate();
+    this.menuUp = GoFast.GetNewMenuUp();
+  }
+}
+
+todo:
+if shift key is held down, enable mouse aim
+display timer to see how long it takes for the ball to come to a resting position
+button to try again with certain change

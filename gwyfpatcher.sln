@@ -34,5 +34,12 @@ Global
 		$4.TabsToSpaces = True
 		$4.EolMarker = Unix
 		$4.scope = text/plain
+		$4.NoTabsAfterNonTabs = True
+		$0.TextStylePolicy = $5
+		$5.inheritsSet = null
+		$5.scope = application/config+xml
+		$0.XmlFormattingPolicy = $6
+		$6.inheritsSet = null
+		$6.scope = application/config+xml
 	EndGlobalSection
 EndGlobal

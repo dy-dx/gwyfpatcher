@@ -1,0 +1,18 @@
+{
+	"folders":
+	[
+		{
+      "follow_symlinks": true,
+			"path": "."
+		}
+	],
+  "solution_file": "./gwyfpatcher.sln",
+  "build_systems":
+  [
+      {
+          "name": "gwyfhelper.dll",
+          "working_dir": "${project_path}",
+          "shell_cmd": "msbuild gwyfhelper && ./postbuildhelper.sh"
+      }
+  ]
+}

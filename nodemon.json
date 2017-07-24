@@ -1,0 +1,9 @@
+{
+  "ignore": [
+      ".git",
+      "AssemblyInfo.cs"
+  ],
+  "events": {
+    "crash": "terminal-notifier -group nodemon -title nodemon -message 'build failed'"
+  }
+}
