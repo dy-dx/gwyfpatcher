@@ -1,25 +1,3 @@
-// // BallMovement
-// public void PreUpdate()
-// {
-//   if (cInput.GetButtonUp("Chat"))
-//   {
-//     this.inHole = true;
-//     this.collidingWithHole = true;
-//   }
-// }
-// 
-// public partial class BallMovement : Photon.MonoBehaviour
-// {
-//   public void PreStart()
-//   {
-//     ScriptEngine scriptEngine = Python.CreateEngine();
-//     ScriptScope ScriptScope = scriptEngine.CreateScope();
-//     string example = "output = 'hello world'";
-//     scriptEngine.CreateScriptSourceFromString(example).Execute(ScriptScope);
-//     UnityEngine.Debug.Log(ScriptScope.GetVariable<string>("output"));
-//   }
-// }
-
 // BallMovement
 using gwyfhelper;
 public void PreUpdate()
@@ -44,25 +22,6 @@ public void OnGUI()
   GoFast.OnGUI();
 }
 
-// Menu
-using gwyfhelper;
-public void LateUpdate()
-{
-  GoFast.MenuLateUpdate();
-}
-
-// Menu
-using gwyfhelper;
-public partial class Menu : Photon.MonoBehaviour
-{
-  public void PreUpdate()
-  {
-    GoFast.MenuPreUpdate();
-    this.menuUp = GoFast.GetNewMenuUp();
-  }
-}
-
 todo:
-if shift key is held down, enable mouse aim
 display timer to see how long it takes for the ball to come to a resting position
 button to try again with certain change

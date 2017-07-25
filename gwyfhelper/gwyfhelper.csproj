@@ -43,6 +43,9 @@
     <Reference Include="UnityEngine.UI">
       <HintPath>..\gwyfpatcher\bin\UnityEngine.UI.dll</HintPath>
     </Reference>
+    <Reference Include="Assembly-CSharp">
+      <HintPath>..\gwyfpatcher\bin\Assembly-CSharp.dll</HintPath>
+    </Reference>
   </ItemGroup>
   <ItemGroup>
     <Compile Include="GoFast.cs" />

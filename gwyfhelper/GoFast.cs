@@ -1,6 +1,7 @@
 ﻿﻿using System;
 using UnityEngine;
 using UnityEngine.UI;
+using UnityEngine.SceneManagement;
 
 namespace gwyfhelper
 {
@@ -21,11 +22,13 @@ namespace gwyfhelper
         static bool shouldGoToPreviousHole;
         static bool shouldGoToNextHole;
 
-        static bool cursorEnabled;
+        static bool cursorEnabled = true;
         static bool helperInitialized;
+        // don't need this anymore
         static bool menuUp;
 
-        static GameObject IngameMenu;
+        static GameObject _Script;
+        static GameObject[] currentSceneGOArray;
 
         static string hitForceInput = "";
         static string rotationInput = "";
@@ -48,27 +51,7 @@ namespace gwyfhelper
             MonoBehaviour.print(msg);
         }
 
-        public static void MenuLateUpdate()
-        {
-            if (cursorEnabled)
-            {
-                HideMenu();
-            }
-        }
-
-        public static void HideMenu()
-        {
-            if (IngameMenu == null)
-            {
-                IngameMenu = GameObject.Find("IngameMenu");
-            }
-            if (IngameMenu != null)
-            {
-                IngameMenu.SetActive(false);
-            }
-        }
-
-        public static void ToggleCursor()
+        public static void LogObjects()
         {
             // MonoBehaviour[] allObjects = UnityEngine.Object.FindObjectsOfType<MonoBehaviour>();
             // foreach(MonoBehaviour obj in allObjects)
@@ -82,46 +65,27 @@ namespace gwyfhelper
             // {
             //     Debug.Log(obj+" is an active object with tag: " + obj.tag);
             // }
-
-            cursorEnabled = !cursorEnabled;
         }
 
-        public static void EnableCursor()
-        {
-            GameObject hitPoint = GameObject.Find("HitPoint");
-            Cursor.lockState = CursorLockMode.None;
-            Cursor.visible = true;
-            if (hitPoint != null)
+        public static void SetCursorLock(bool enabled) {
+            // from SteamInvites class
+            // Menu.steamInviteUp = false seems to unlock the mouse cursor lol
+            if (_Script == null && SceneManager.GetActiveScene().name != "MenuV2")
             {
-                hitPoint.SetActive(false);
+                currentSceneGOArray = SceneManager.GetActiveScene().GetRootGameObjects();
+                for (int l = 0; l < (int)currentSceneGOArray.Length; l++)
+                {
+                    if (currentSceneGOArray[l].name == "_Scripts")
+                    {
+                        _Script = currentSceneGOArray[l];
+                    }
+                }
             }
-            // if (this.playerCamPivot != null)
-            // {
-            //     this.playerCamPivot.GetComponent<MouseAim>().enabled = false;
-            // }
-            // if (this.playerBall != null)
-            // {
-            //     this.playerBall.GetComponent<BallMovement>().menuUp = true;
-            // }
-        }
 
-        public static void DisableCursor()
-        {
-            GameObject hitPoint = GameObject.Find("HitPoint");
-            Cursor.lockState = CursorLockMode.Locked;
-            Cursor.visible = false;
-            if (hitPoint != null)
+            if (_Script != null)
             {
-                hitPoint.SetActive(true);
+                _Script.GetComponent<Menu>().steamInviteUp = enabled;
             }
-            // if (this.playerCamPivot != null)
-            // {
-            //     this.playerCamPivot.GetComponent<MouseAim>().enabled = true;
-            // }
-            // if (this.playerBall != null)
-            // {
-            //     this.playerBall.GetComponent<BallMovement>().menuUp = false;
-            // }
         }
 
         public static void Update(
@@ -195,10 +159,11 @@ namespace gwyfhelper
             }
             shouldTeleport = false;
 
-            if (Input.GetKeyUp("escape"))
+            if (Input.GetKeyUp("left shift") || Input.GetKeyUp("right shift"))
             {
-                ToggleCursor();
+                cursorEnabled = !cursorEnabled;
             }
+            SetCursorLock(cursorEnabled);
 
 
             if (Input.GetKeyUp("u"))
@@ -242,15 +207,6 @@ namespace gwyfhelper
             {
                 hitForce = newHitForce;
             }
-        }
-
-        public static void LateUpdate()
-        {
-            // don't need this anymore
-            // if (cursorEnabled)
-            // {
-            //     Cursor.lockState = CursorLockMode.None;
-            // }
         }
 
         // copy pasted from BallMovement#Update
@@ -303,29 +259,13 @@ namespace gwyfhelper
             return shouldResetToLastShot;
         }
 
-        public static void MenuPreUpdate(bool _menuUp)
-        {
-            menuUp = _menuUp;
-
-            if (cursorEnabled) {
-                menuUp = true;
-            } 
-        }
-
-        public static bool GetNewMenuUp()
-        {
-            return menuUp;
-        }
-
         public static void OnGUI()
         {
             if (!helperInitialized) return;
 
             const float w = 200;
             const float h = 200;
-            // const float x = 10;
             const float textFieldW = 50;
-            // const float textFieldH = 20;
 
             GUILayout.BeginArea(new Rect (5, 5, w, h), GUI.skin.box);
             GUILayout.Label("t1gerw00dz 1337 hax menu v0.1");
@@ -368,19 +308,24 @@ namespace gwyfhelper
             GUILayout.EndHorizontal();
 
             GUILayout.EndArea();
+        }
 
-            // GUI.Box(new Rect(5, 5, w, h), "t1gerw00dz 1337 hax menu v0.1");
-
-            // GUI.Label(new Rect(x, 30, w, h), "hitForce: " + hitForce.ToString());
-            // hitForceInput = GUI.TextField(new Rect(x, 50, textFieldW, textFieldH), hitForceInput);
-
-            // GUI.Label(new Rect(x, 70, w, h), "degrees: " + playerCamPivot.transform.rotation.eulerAngles.y.ToString());
-            // rotationInput = GUI.TextField(new Rect(x, 90, textFieldW, textFieldH), rotationInput);
-
-            // if (GUI.Button(new Rect(x, 110, 80, 20), "Shoot"))
-            // {
-            //     shouldShoot = true;
-            // }
+        // don't need these anymore
+        public static void LateUpdate()
+        {
+            return;
+        }
+        public static void MenuLateUpdate()
+        {
+            return;
+        }
+        public static void MenuPreUpdate(bool _menuUp)
+        {
+            menuUp = _menuUp;
+        }
+        public static bool GetNewMenuUp()
+        {
+            return menuUp;
         }
     }
 }
