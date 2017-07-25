@@ -14,7 +14,6 @@ namespace gwyfhelper
         static GameObject playerCamPivot;
 
         static bool shouldResetToLastShot;
-        static bool _shouldResetToLastShot;
 
         // shitty button logic
         static bool shouldShoot;
@@ -22,7 +21,8 @@ namespace gwyfhelper
         static bool shouldGoToPreviousHole;
         static bool shouldGoToNextHole;
 
-        static bool cursorEnabled = true;
+        // static bool cursorEnabled = true;
+        static bool cursorEnabled;
         static bool helperInitialized;
         // don't need this anymore
         static bool menuUp;
@@ -30,6 +30,8 @@ namespace gwyfhelper
         static GameObject _Script;
         static GameObject[] currentSceneGOArray;
 
+        static bool guiSkipIntermissions = true;
+        static bool guiUndoShotClicked;
         static string hitForceInput = "";
         static string rotationInput = "";
 
@@ -90,36 +92,65 @@ namespace gwyfhelper
 
         public static void Update(
             int _hole,
-            float _hitForce,
-            Vector3 _preHitLocation,
+            float _hitForce, // don't need this anymore
+            Vector3 _preHitLocation, // don't need this anymore
             Transform _ballMovementTransform,
             Rigidbody rb,
-            GameObject _playerCamPivot,
-            float currentVelocity,
-            float minVelToHit,
+            GameObject _playerCamPivot, // don't need this anymore
+            float currentVelocity, // don't need this anymore
+            float minVelToHit, // don't need this anymore
             bool outOfBounds,
             bool onTrolley,
             float initialDrag,
-            float sandDragToApply,
-            float waterDragToApply
+            float sandDragToApply, // don't need this anymore
+            float waterDragToApply // don't need this anymore
         )
         {
+            if (_Script == null && SceneManager.GetActiveScene().name != "MenuV2")
+            {
+                currentSceneGOArray = SceneManager.GetActiveScene().GetRootGameObjects();
+                for (int l = 0; l < (int)currentSceneGOArray.Length; l++)
+                {
+                    if (currentSceneGOArray[l].name == "_Scripts")
+                    {
+                        _Script = currentSceneGOArray[l];
+                    }
+                }
+            }
+            if (_Script == null)
+            {
+                return;
+            }
+
             helperInitialized = true;
-            
+
             shouldResetToLastShot = false;
+
             hole = _hole;
-            hitForce = _hitForce;
-            preHitLocation = _preHitLocation;
             ballMovementTransform = _ballMovementTransform;
-            playerCamPivot = _playerCamPivot;
+            playerCamPivot = _Script.GetComponent<Menu>().playerCamPivot;
+            GameObject playerBall = _Script.GetComponent<Menu>().playerBall;
+            BallMovement ballMovement = playerBall.GetComponent<BallMovement>();
+            preHitLocation = ballMovement.preHitLocation;
+            hitForce = ballMovement.hitForce;
+
+
+            if (guiSkipIntermissions)
+            {
+                if (ballMovement.intermissionStarted && !ballMovement.startIntermission)
+                {
+                    ballMovement.intermissionStarted = false;
+                    ballMovement.startIntermission = true;
+                }
+            }
+
 
             // if (Input.GetKeyUp("h"))
-            // hopefully this still makes sense in the morning
-            if (_shouldResetToLastShot)
+            if (guiUndoShotClicked)
             {
                 shouldResetToLastShot = true;
             }
-            _shouldResetToLastShot = false;
+            guiUndoShotClicked = false;
 
             // if (Input.GetKeyUp("j"))
             if (shouldGoToPreviousHole)
@@ -155,7 +186,9 @@ namespace gwyfhelper
                 ballMovementTransform.rotation = holeObject.transform.rotation;
                 playerCamPivot.transform.rotation = holeObject.gameObject.transform.rotation;
                 playerCamPivot.transform.Rotate(20f, 0f, 0f);
-                rotationInput = "";
+                // rotationInput = "";
+
+                preHitLocation = holeObject.transform.position;
             }
             shouldTeleport = false;
 
@@ -181,13 +214,12 @@ namespace gwyfhelper
 
             if (shouldShoot) {
                 Shoot(
+                    ballMovement,
                     rb,
                     ballMovementTransform,
                     outOfBounds,
                     onTrolley,
-                    initialDrag,
-                    sandDragToApply,
-                    waterDragToApply
+                    initialDrag
                 );
                 shouldShoot = false;
             }
@@ -197,8 +229,7 @@ namespace gwyfhelper
             if (!String.IsNullOrEmpty(rotationInput) && parsedRot)
             {
                 var angles = playerCamPivot.transform.rotation.eulerAngles;
-                playerCamPivot.transform.eulerAngles = new Vector3(
-                    angles.x, newYRotation, angles.z);
+                playerCamPivot.transform.eulerAngles = new Vector3(angles.x, newYRotation, angles.z);
             }
 
             float newHitForce;
@@ -211,13 +242,12 @@ namespace gwyfhelper
 
         // copy pasted from BallMovement#Update
         public static void Shoot(
+            BallMovement ballMovement,
             Rigidbody rb,
             Transform ballMovementTransform,
             bool outOfBounds,
             bool onTrolley,
-            float initialDrag,
-            float sandDragToApply,
-            float waterDragToApply
+            float initialDrag
         )
         {
             GameObject hitPoint = GameObject.Find("HitPoint");
@@ -227,10 +257,13 @@ namespace gwyfhelper
                 hitPoint.transform.position.z
             );
             rb.angularDrag = 1f;
-            rb.drag = initialDrag + sandDragToApply + waterDragToApply;
+            rb.drag = initialDrag + ballMovement.sandDragToApply + ballMovement.waterDragToApply;
             if (hitForce > 0f)
             {
                 rb.AddForce(-(playerPosition - ballMovementTransform.position).normalized * (hitForce + 1f), ForceMode.Force);
+                if (!onTrolley) {
+                    ballMovement.hitCounter++;
+                }
             }
             if (!outOfBounds && !onTrolley)
             {
@@ -287,7 +320,7 @@ namespace gwyfhelper
             }
             if (GUILayout.Button("Undo shot"))
             {
-                _shouldResetToLastShot = true;
+                guiUndoShotClicked = true;
             }
             GUILayout.EndHorizontal();
             
@@ -305,6 +338,10 @@ namespace gwyfhelper
             {
                 shouldGoToNextHole = true;
             }
+            GUILayout.EndHorizontal();
+
+            GUILayout.BeginHorizontal();
+            guiSkipIntermissions = GUILayout.Toggle(guiSkipIntermissions, "Skip Intermissions");
             GUILayout.EndHorizontal();
 
             GUILayout.EndArea();
