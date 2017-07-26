@@ -7,7 +7,7 @@ namespace gwyfhelper
 {
     public class GoFast
     {
-        static int hole;
+        static int hole = 1;
         static Vector3 preHitLocation;
         static BallMovement ballMovement;
         static Transform ballMovementTransform;
@@ -28,6 +28,7 @@ namespace gwyfhelper
         static bool shouldGoToPreviousHole;
         static bool shouldGoToNextHole;
         static bool guiSkipIntermissions = true;
+        static bool guiLockHole;
         static bool guiResetShotClicked;
         static bool guiRetryShotClicked;
         static bool guiUseHitForceSlider = true;
@@ -129,15 +130,23 @@ namespace gwyfhelper
 
             helperInitialized = true;
 
-            hole = _hole;
             ballMovementTransform = _ballMovementTransform;
             rb = _rb;
             playerCamPivot = _Script.GetComponent<Menu>().playerCamPivot;
             GameObject playerBall = _Script.GetComponent<Menu>().playerBall;
             ballMovement = playerBall.GetComponent<BallMovement>();
             preHitLocation = ballMovement.preHitLocation;
-            // hitForce = ballMovement.hitForce;
 
+            if (guiLockHole)
+            {
+                if (hole != _hole) {
+                    ResetToSpawn();
+                }
+            }
+            else
+            {
+                hole = _hole;
+            }
 
             if (guiSkipIntermissions)
             {
@@ -269,9 +278,9 @@ namespace gwyfhelper
             var holeObject = GameObject.Find("SpawnHole" + hole);
             ResetToPosition(holeObject.transform.position);
 
-            ballMovementTransform.rotation = holeObject.transform.rotation;
-            playerCamPivot.transform.rotation = holeObject.gameObject.transform.rotation;
-            playerCamPivot.transform.Rotate(20f, 0f, 0f);
+            // ballMovementTransform.rotation = holeObject.transform.rotation;
+            // playerCamPivot.transform.rotation = holeObject.gameObject.transform.rotation;
+            // playerCamPivot.transform.Rotate(20f, 0f, 0f);
 
             preHitLocation = holeObject.transform.position;
         }
@@ -410,6 +419,7 @@ namespace gwyfhelper
             GUILayout.BeginHorizontal();
             guiSkipIntermissions = GUILayout.Toggle(guiSkipIntermissions, "Skip Intermissions");
             GUILayout.EndHorizontal();
+            guiLockHole = GUILayout.Toggle(guiLockHole, "Lock Current Hole");
 
             GUILayout.EndArea();
         }
