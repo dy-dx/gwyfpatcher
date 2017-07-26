@@ -31,8 +31,8 @@ namespace gwyfhelper
         static bool guiLockHole;
         static bool guiResetShotClicked;
         static bool guiRetryShotClicked;
-        static bool guiUseHitForceSlider = true;
-        static bool guiUseDegreesSlider = true;
+        static bool guiUseHitForceSlider;
+        static bool guiUseDegreesSlider;
         static float guiHitForceSliderInput;
         static float guiDegreesSliderInput;
         static string hitForceInput = "";
@@ -40,6 +40,9 @@ namespace gwyfhelper
 
         static bool enableShootTimer;
         static float timeUntilShouldShoot;
+
+        static bool isTrackingBallMovementTime;
+        static float ballMovementTime;
 
         public GoFast()
         {
@@ -137,6 +140,20 @@ namespace gwyfhelper
             ballMovement = playerBall.GetComponent<BallMovement>();
             preHitLocation = ballMovement.preHitLocation;
 
+
+            if (isTrackingBallMovementTime)
+            {
+                if (ballMovement.currentVelocity > ballMovement.minVelToHit || ballMovementTime < 0.5f)
+                {
+                    ballMovementTime += Time.deltaTime;
+                }
+
+                if (ballMovement.inHole)
+                {
+                    isTrackingBallMovementTime = false;
+                }
+            }
+
             if (guiLockHole)
             {
                 if (hole != _hole) {
@@ -177,7 +194,7 @@ namespace gwyfhelper
             {
                 ResetToPosition(preHitLocation);
                 enableShootTimer = true;
-                timeUntilShouldShoot = 0.25f;
+                timeUntilShouldShoot = 0.4f;
                 guiRetryShotClicked = false;
             }
 
@@ -317,6 +334,8 @@ namespace gwyfhelper
                 if (!onTrolley) {
                     ballMovement.hitCounter++;
                 }
+                ballMovementTime = 0f;
+                isTrackingBallMovementTime = true;
             }
             if (!outOfBounds && !onTrolley)
             {
@@ -347,11 +366,14 @@ namespace gwyfhelper
             }
 
             const float w = 250;
-            const float h = 250;
+            const float h = 300;
             const float textFieldW = 65;
             const float halfButtonW = ((w-10)/2);
 
             GUILayout.BeginArea(new Rect (5, 5, w, h), GUI.skin.box);
+
+            GUILayout.Label("Current Hole: " + hole);
+            GUILayout.Label("Ball Movement Time: " + ballMovementTime);
 
             GUILayout.BeginHorizontal();
             float hitForceSource = ballMovement.hitForce;
