@@ -44,6 +44,11 @@ namespace gwyfhelper
         static bool isTrackingBallMovementTime;
         static float ballMovementTime;
 
+        static Transform obstacleTransform;
+        static float obstacleRotationDegrees;
+        static bool guiObstacleRotationShootToggle;
+        static string guiObstacleRotationInput = "";
+
         public GoFast()
         {
         }
@@ -99,6 +104,24 @@ namespace gwyfhelper
             }
         }
 
+        public static StaticRotator GetClosestRotator(string name)
+        {
+            StaticRotator[] allRotators = UnityEngine.Object.FindObjectsOfType<StaticRotator>();
+            StaticRotator[] rotators = Array.FindAll(allRotators, r => r.name.StartsWith(name));
+            float lowestDist = Single.PositiveInfinity;
+            StaticRotator closest = null;
+            foreach(var obj in rotators)
+            {
+                float dist = Vector3.Distance(obj.transform.position, ballMovementTransform.position);
+                if (dist < lowestDist)
+                {
+                    lowestDist = dist;
+                    closest = obj;
+                }
+            }
+            return closest;
+        }
+
         public static void Update(
             int _hole,
             float _hitForce, // don't need this anymore
@@ -140,6 +163,61 @@ namespace gwyfhelper
             ballMovement = playerBall.GetComponent<BallMovement>();
             preHitLocation = ballMovement.preHitLocation;
 
+            if (guiLockHole)
+            {
+                if (hole != _hole) {
+                    ResetToSpawn();
+                }
+            }
+            else
+            {
+                hole = _hole;
+            }
+
+            if (SceneManager.GetActiveScene().name == "ForestLevel") {
+                if (hole == 4)
+                {
+                    obstacleTransform = GetClosestRotator("Large_Spinner").transform;
+                    obstacleRotationDegrees = obstacleTransform.eulerAngles.z % 180;
+                }
+                else if (hole == 8)
+                {
+                    obstacleTransform = GetClosestRotator("Misc_smallSpinner").transform;
+                    // a hack to make the euler angles get calculated correctly
+                    obstacleTransform.eulerAngles = new Vector3(270, obstacleTransform.eulerAngles.y, obstacleTransform.eulerAngles.z);
+                    obstacleRotationDegrees = obstacleTransform.eulerAngles.y % 180;
+                }
+                else if (hole == 9)
+                {
+                    obstacleTransform = GetClosestRotator("Windmill_Blades").transform;
+                    // idk
+                    float pitchAngle = Vector3.Angle(new Vector3(obstacleTransform.forward.x, 0, obstacleTransform.forward.z), obstacleTransform.forward);
+                    obstacleRotationDegrees = pitchAngle;
+                }
+                else if (hole == 10)
+                {
+                    obstacleTransform = GetClosestRotator("Large_Spinner").transform;
+                    obstacleRotationDegrees = obstacleTransform.eulerAngles.y % 180;
+                }
+                else
+                {
+                    obstacleTransform = null;
+                }
+
+                if (obstacleTransform != null && guiObstacleRotationShootToggle) {
+                    float obstacleRotInput;
+                    bool parsedRot = float.TryParse(guiObstacleRotationInput, out obstacleRotInput);
+                    if (!String.IsNullOrEmpty(guiObstacleRotationInput) && parsedRot)
+                    {
+                        if (Math.Abs(obstacleRotationDegrees - obstacleRotInput) < 2f)
+                        {
+                            shouldShoot = true;
+                            guiObstacleRotationShootToggle = false;
+                        }
+                    }
+                }
+            }
+
 
             if (isTrackingBallMovementTime)
             {
@@ -152,17 +230,6 @@ namespace gwyfhelper
                 {
                     isTrackingBallMovementTime = false;
                 }
-            }
-
-            if (guiLockHole)
-            {
-                if (hole != _hole) {
-                    ResetToSpawn();
-                }
-            }
-            else
-            {
-                hole = _hole;
             }
 
             if (guiSkipIntermissions)
@@ -366,7 +433,7 @@ namespace gwyfhelper
             }
 
             const float w = 250;
-            const float h = 300;
+            const float h = 500;
             const float textFieldW = 65;
             const float halfButtonW = ((w-10)/2);
 
@@ -374,6 +441,14 @@ namespace gwyfhelper
 
             GUILayout.Label("Current Hole: " + hole);
             GUILayout.Label("Ball Movement Time: " + ballMovementTime);
+            GUILayout.Label("Ball Position: " + ballMovementTransform.position);
+            if (obstacleTransform != null)
+            {
+                GUILayout.Label("Obstacle Rotation: " + obstacleTransform.rotation.eulerAngles);
+                GUILayout.Label("Symmetric Rotation: " + obstacleRotationDegrees);
+                guiObstacleRotationShootToggle = GUILayout.Toggle(guiObstacleRotationShootToggle, "Shoot when rotation is:");
+                guiObstacleRotationInput = GUILayout.TextField(guiObstacleRotationInput, 10, GUILayout.Width(textFieldW));
+            }
 
             GUILayout.BeginHorizontal();
             float hitForceSource = ballMovement.hitForce;
