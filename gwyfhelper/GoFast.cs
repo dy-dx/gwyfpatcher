@@ -104,7 +104,7 @@ namespace gwyfhelper
             float _hitForce, // don't need this anymore
             Vector3 _preHitLocation, // don't need this anymore
             Transform _ballMovementTransform,
-            Rigidbody _rb,
+            Rigidbody _rb, // don't need this anymore
             GameObject _playerCamPivot, // don't need this anymore
             float currentVelocity, // don't need this anymore
             float minVelToHit, // don't need this anymore
@@ -134,9 +134,9 @@ namespace gwyfhelper
             helperInitialized = true;
 
             ballMovementTransform = _ballMovementTransform;
-            rb = _rb;
             playerCamPivot = _Script.GetComponent<Menu>().playerCamPivot;
             GameObject playerBall = _Script.GetComponent<Menu>().playerBall;
+            rb = playerBall.GetComponent<Rigidbody>();
             ballMovement = playerBall.GetComponent<BallMovement>();
             preHitLocation = ballMovement.preHitLocation;
 
