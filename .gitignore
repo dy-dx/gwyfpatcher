@@ -42,3 +42,8 @@ Thumbs.db
 deps/**/*.dll
 deps/*
 !deps/readme.txt
+
+notes/
+!notes/.gitkeep
+
+*.sublime-workspace
