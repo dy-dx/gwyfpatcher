@@ -1,6 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-  <Import Project="..\packages\ILRepack.2.0.13\build\ILRepack.props" Condition="Exists('..\packages\ILRepack.2.0.13\build\ILRepack.props')" />
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">x86</Platform>
@@ -35,25 +34,13 @@
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="System" />
-    <Reference Include="dnpatch">
-      <HintPath>..\deps\dnpatch.script-0.7.52\dnpatch.dll</HintPath>
-    </Reference>
-    <Reference Include="dnpatch.script">
-      <HintPath>..\deps\dnpatch.script-0.7.52\dnpatch.script.dll</HintPath>
-    </Reference>
-    <Reference Include="Newtonsoft.Json">
-      <HintPath>..\deps\dnpatch.script-0.7.52\Newtonsoft.Json.dll</HintPath>
-    </Reference>
     <Reference Include="dnlib">
-      <HintPath>..\deps\dnpatch.script-0.7.52\dnlib.dll</HintPath>
+      <HintPath>..\deps\dnpatch.script\dnlib.dll</HintPath>
     </Reference>
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="packages.config" />
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
 </Project>

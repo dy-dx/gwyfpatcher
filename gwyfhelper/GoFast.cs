@@ -1,26 +1,22 @@
-﻿﻿using System;
+﻿using System;
+using System.Reflection;
 using UnityEngine;
-using UnityEngine.UI;
 using UnityEngine.SceneManagement;
+using ExitGames.Client.Photon;
 
 namespace gwyfhelper
 {
     public class GoFast
     {
-        static int hole = 1;
-        static Vector3 preHitLocation;
+        // null these out on onDestroy
         static BallMovement ballMovement;
         static Transform ballMovementTransform;
         static Rigidbody rb;
         static GameObject playerCamPivot;
         static GameObject _Script;
-        static GameObject[] currentSceneGOArray;
 
-        // static bool cursorEnabled = true;
+        static int prevHole;
         static bool cursorEnabled;
-        static bool helperInitialized;
-        // don't need this anymore
-        static bool menuUp;
 
         // shitty button logic
         static bool shouldShoot;
@@ -72,7 +68,6 @@ namespace gwyfhelper
             // MonoBehaviour[] allObjects = UnityEngine.Object.FindObjectsOfType<MonoBehaviour>();
             // foreach(MonoBehaviour obj in allObjects)
             // {
-            //     // Debug.LogError(obj+" is an active object");
             //     Debug.Log(obj+" is an active object");
             // }
 
@@ -84,20 +79,7 @@ namespace gwyfhelper
         }
 
         public static void SetCursorLock(bool enabled) {
-            // from SteamInvites class
             // Menu.steamInviteUp = false seems to unlock the mouse cursor lol
-            if (_Script == null && SceneManager.GetActiveScene().name != "MenuV2")
-            {
-                currentSceneGOArray = SceneManager.GetActiveScene().GetRootGameObjects();
-                for (int l = 0; l < (int)currentSceneGOArray.Length; l++)
-                {
-                    if (currentSceneGOArray[l].name == "_Scripts")
-                    {
-                        _Script = currentSceneGOArray[l];
-                    }
-                }
-            }
-
             if (_Script != null)
             {
                 _Script.GetComponent<Menu>().steamInviteUp = enabled;
@@ -122,25 +104,35 @@ namespace gwyfhelper
             return closest;
         }
 
-        public static void Update(
-            int _hole,
-            float _hitForce, // don't need this anymore
-            Vector3 _preHitLocation, // don't need this anymore
-            Transform _ballMovementTransform,
-            Rigidbody _rb, // don't need this anymore
-            GameObject _playerCamPivot, // don't need this anymore
-            float currentVelocity, // don't need this anymore
-            float minVelToHit, // don't need this anymore
-            bool outOfBounds,
-            bool onTrolley,
-            float initialDrag,
-            float sandDragToApply, // don't need this anymore
-            float waterDragToApply // don't need this anymore
-        )
+        static T GetInstanceField<T>(Type type, object instance, string fieldName)
         {
+            BindingFlags flags = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic;
+            return (T)type.GetField(fieldName, flags).GetValue(instance);
+        }
+        static void SetInstanceField<T>(Type type, object instance, string fieldName, T value)
+        {
+            BindingFlags flags = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic;
+            type.GetField(fieldName, flags).SetValue(instance, value);
+        }
+
+        static int GetHole()
+        {
+            return GetInstanceField<int>(typeof(BallMovement), ballMovement, "hole");
+        }
+        static void SetHole(int val)
+        {
+            SetInstanceField<int>(typeof(BallMovement), ballMovement, "hole", val);
+            var playerCustomProps = GetInstanceField<Hashtable>(typeof(BallMovement), ballMovement, "playerCustomProps");
+            playerCustomProps["holeNumber"] = val;
+            ballMovement.currentHoleNumber = val;
+        }
+
+        public static void PreUpdate()
+        {
+            // from SteamInvites class
             if (_Script == null && SceneManager.GetActiveScene().name != "MenuV2")
             {
-                currentSceneGOArray = SceneManager.GetActiveScene().GetRootGameObjects();
+                GameObject[] currentSceneGOArray = SceneManager.GetActiveScene().GetRootGameObjects();
                 for (int l = 0; l < (int)currentSceneGOArray.Length; l++)
                 {
                     if (currentSceneGOArray[l].name == "_Scripts")
@@ -154,25 +146,21 @@ namespace gwyfhelper
                 return;
             }
 
-            helperInitialized = true;
-
-            ballMovementTransform = _ballMovementTransform;
             playerCamPivot = _Script.GetComponent<Menu>().playerCamPivot;
             GameObject playerBall = _Script.GetComponent<Menu>().playerBall;
             rb = playerBall.GetComponent<Rigidbody>();
             ballMovement = playerBall.GetComponent<BallMovement>();
-            preHitLocation = ballMovement.preHitLocation;
+            ballMovementTransform = ballMovement.transform;
 
             if (guiLockHole)
             {
-                if (hole != _hole) {
+                if (prevHole != GetHole()) {
+                    SetHole(prevHole);
                     ResetToSpawn();
                 }
             }
-            else
-            {
-                hole = _hole;
-            }
+
+            int hole = GetHole();
 
             if (SceneManager.GetActiveScene().name == "ForestLevel") {
                 if (hole == 4)
@@ -253,13 +241,13 @@ namespace gwyfhelper
 
             if (guiResetShotClicked)
             {
-                ResetToPosition(preHitLocation);
+                ResetToPosition(ballMovement.preHitLocation);
                 guiResetShotClicked = false;
             }
 
             if (guiRetryShotClicked)
             {
-                ResetToPosition(preHitLocation);
+                ResetToPosition(ballMovement.preHitLocation);
                 enableShootTimer = true;
                 timeUntilShouldShoot = 0.4f;
                 guiRetryShotClicked = false;
@@ -270,7 +258,7 @@ namespace gwyfhelper
             {
                 if (hole > 1)
                 {
-                    hole--;
+                    SetHole(hole - 1);
                 }
                 ResetToSpawn();
                 shouldGoToPreviousHole = false;
@@ -281,7 +269,7 @@ namespace gwyfhelper
             {
                 if (hole < 18)
                 {
-                    hole++;
+                    SetHole(hole + 1);
 
                 }
                 ResetToSpawn();
@@ -315,14 +303,7 @@ namespace gwyfhelper
             }
 
             if (shouldShoot) {
-                Shoot(
-                    ballMovement,
-                    rb,
-                    ballMovementTransform,
-                    outOfBounds,
-                    onTrolley,
-                    initialDrag
-                );
+                Shoot();
                 shouldShoot = false;
             }
 
@@ -355,18 +336,20 @@ namespace gwyfhelper
                     ballMovement.hitForce = newHitForce;
                 }
             }
+
+            prevHole = GetHole();
         }
 
         public static void ResetToSpawn()
         {
-            var holeObject = GameObject.Find("SpawnHole" + hole);
+            var holeObject = GameObject.Find("SpawnHole" + GetHole());
             ResetToPosition(holeObject.transform.position);
 
             // ballMovementTransform.rotation = holeObject.transform.rotation;
             // playerCamPivot.transform.rotation = holeObject.gameObject.transform.rotation;
             // playerCamPivot.transform.Rotate(20f, 0f, 0f);
 
-            preHitLocation = holeObject.transform.position;
+            ballMovement.preHitLocation = holeObject.transform.position;
         }
 
         public static void ResetToPosition(Vector3 pos)
@@ -378,15 +361,11 @@ namespace gwyfhelper
         }
 
         // copy pasted from BallMovement#Update
-        public static void Shoot(
-            BallMovement ballMovement,
-            Rigidbody rb,
-            Transform ballMovementTransform,
-            bool outOfBounds,
-            bool onTrolley,
-            float initialDrag
-        )
+        public static void Shoot()
         {
+            bool outOfBounds = GetInstanceField<bool>(typeof(BallMovement), ballMovement, "outOfBounds");
+            bool onTrolley = GetInstanceField<bool>(typeof(BallMovement), ballMovement, "onTrolley");
+            float initialDrag = GetInstanceField<float>(typeof(BallMovement), ballMovement, "initialDrag");
             GameObject hitPoint = GameObject.Find("HitPoint");
             Vector3 playerPosition = new Vector3(
                 hitPoint.transform.position.x,
@@ -406,24 +385,17 @@ namespace gwyfhelper
             }
             if (!outOfBounds && !onTrolley)
             {
-                preHitLocation = ballMovementTransform.position;
+                ballMovement.preHitLocation = ballMovementTransform.position;
             }
             ballMovement.hitForce = 0f;
         }
 
-        public static int GetNewHole()
-        {
-            return hole;
-        }
-
-        public static Vector3 GetNewPreHitLocation()
-        {
-            return preHitLocation;
-        }
-
         public static void OnGUI()
         {
-            if (!helperInitialized) return;
+            if (ballMovement == null)
+            {
+                return;
+            }
 
             // If you press esc, defocus the text fields
             Event e = Event.current;
@@ -439,7 +411,7 @@ namespace gwyfhelper
 
             GUILayout.BeginArea(new Rect (5, 5, w, h), GUI.skin.box);
 
-            GUILayout.Label("Current Hole: " + hole);
+            GUILayout.Label("Current Hole: " + GetHole());
             GUILayout.Label("Ball Movement Time: " + ballMovementTime);
             GUILayout.Label("Ball Position: " + ballMovementTransform.position);
             if (obstacleTransform != null)
@@ -521,32 +493,32 @@ namespace gwyfhelper
             GUILayout.EndArea();
         }
 
-        // don't need these anymore
+        // don't currently need these
+        public static void PreStart()
+        {
+            Debug.Log("PreStart called");
+            prevHole = 1;
+            cursorEnabled = false;
+            return;
+        }
+        public static void PreFixedUpdate()
+        {
+            return;
+        }
+        public static void OnDestroy()
+        {
+            Debug.Log("OnDestroy called");
+            ballMovement = null;
+            ballMovementTransform = null;
+            rb = null;
+            playerCamPivot = null;
+            _Script = null;
+
+            return;
+        }
         public static void LateUpdate()
         {
             return;
-        }
-        public static void MenuLateUpdate()
-        {
-            return;
-        }
-        public static void MenuPreUpdate(bool _menuUp)
-        {
-            menuUp = _menuUp;
-        }
-        public static bool GetNewMenuUp()
-        {
-            return menuUp;
-        }
-        // don't need this anymore
-        public static bool ShouldResetToLastShot()
-        {
-            return false;
-        }
-        // don't need this anymore
-        public static float GetNewHitForce()
-        {
-            return ballMovement.hitForce;
         }
     }
 }

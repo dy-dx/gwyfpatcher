@@ -1,5 +1,11 @@
-1. Extract the contents of this file to ./dnpatch.script-0.7.52
+1. Extract this file here:
 
     https://github.com/ioncodes/dnpatch/releases/download/0.7.52/dnpatch.script.zip
 
-2. git clone git@github.com:exodrifter/unity-python.git .
+2. Copy your gwyf "Managed" folder here
+
+    Windows:
+    C:\Program Files (x86)\Steam\steamapps\common\Golf With Your Friends\Golf With Your Friends_Data\Managed
+
+    Mac:
+    ~/Library/Application Support/Steam/SteamApps/common/Golf With Your Friends/Golf With Your Friends.app/Contents/Resources/Data/Managed
