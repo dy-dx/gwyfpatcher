@@ -130,6 +130,11 @@ namespace gwyfpatcher
             string originalModulePath = Path.Combine(basePath, ModuleFileName);
             if (File.Exists(originalModulePath))
             {
+                // Release handles so we can overwrite it
+                Mod.Context.AssemblyResolver.Clear();
+                Mod.MetaData.PEImage.UnsafeDisableMemoryMappedIO();
+                Mod = null;
+
                 string backupModulePath = Path.Combine(basePath, ModuleBackupFileName);
                 Console.WriteLine("Copying " + ModuleFileName + " to " + ModuleBackupFileName);
                 File.Copy(originalModulePath, backupModulePath, true);
