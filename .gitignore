@@ -41,6 +41,7 @@ Thumbs.db
 
 deps/*
 !deps/readme.txt
+!deps/Jint*
 
 notes/*
 !notes/.gitkeep

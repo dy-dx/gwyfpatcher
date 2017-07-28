@@ -503,6 +503,10 @@ namespace gwyfhelper
             Debug.Log("PreStart called");
             prevHole = 1;
             cursorEnabled = false;
+
+            JS.Initialize();
+            JS.Log("hello world");
+
             return;
         }
         public static void OnDestroy()
