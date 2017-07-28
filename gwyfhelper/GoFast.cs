@@ -373,6 +373,15 @@ namespace gwyfhelper
 
         public static void Shoot()
         {
+            if (ballMovement.hitForce <= 0f)
+            {
+                return;
+            }
+            // assume we successfully shot and we can start tracking movement time
+            // even though that may not be true
+            ballMovementTime = 0f;
+            isTrackingBallMovementTime = true;
+
             GameObject hitPoint = GameObject.Find("HitPoint");
             hitPoint.SetActive(true);
             ballMovement.menuUp = false;
@@ -383,6 +392,7 @@ namespace gwyfhelper
             int num = inputNameHash[hash];
             var getKeyUpArray = GetStaticField<bool[]>(typeof(cInput), "_getKeyUpArray");
             getKeyUpArray[num] = true;
+
         }
 
         public static void OnGUI()
