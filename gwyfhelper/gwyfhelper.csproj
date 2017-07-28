@@ -40,6 +40,9 @@
     <Reference Include="Photon3Unity3D">
       <HintPath>..\deps\Managed\Photon3Unity3D.dll</HintPath>
     </Reference>
+    <Reference Include="cInput">
+      <HintPath>..\deps\Managed\cInput.dll</HintPath>
+    </Reference>
   </ItemGroup>
   <ItemGroup>
     <Compile Include="GoFast.cs" />

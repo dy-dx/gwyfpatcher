@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Reflection;
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using ExitGames.Client.Photon;
@@ -114,15 +115,25 @@ namespace gwyfhelper
             BindingFlags flags = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic;
             type.GetField(fieldName, flags).SetValue(instance, value);
         }
+        static T GetStaticField<T>(Type type, string fieldName)
+        {
+            BindingFlags flags = BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic;
+            return (T)type.GetField(fieldName, flags).GetValue(null);
+        }
 
         static int GetHole()
         {
-            return GetInstanceField<int>(typeof(BallMovement), ballMovement, "hole");
+            // this doesn't work anymore, since private field names got obfuscated
+            // return GetInstanceField<int>(typeof(BallMovement), ballMovement, "hole");
+            Hashtable playerCustomProps = PhotonNetwork.player.CustomProperties;
+            return (int)playerCustomProps["holeNumber"];
         }
         static void SetHole(int val)
         {
-            SetInstanceField<int>(typeof(BallMovement), ballMovement, "hole", val);
-            var playerCustomProps = GetInstanceField<Hashtable>(typeof(BallMovement), ballMovement, "playerCustomProps");
+            // this doesn't work anymore, since private field names got obfuscated
+            // SetInstanceField<int>(typeof(BallMovement), ballMovement, "hole", val);
+
+            Hashtable playerCustomProps = PhotonNetwork.player.CustomProperties;
             playerCustomProps["holeNumber"] = val;
             ballMovement.currentHoleNumber = val;
         }
@@ -360,34 +371,18 @@ namespace gwyfhelper
             rb.isKinematic = false;
         }
 
-        // copy pasted from BallMovement#Update
         public static void Shoot()
         {
-            bool outOfBounds = GetInstanceField<bool>(typeof(BallMovement), ballMovement, "outOfBounds");
-            bool onTrolley = GetInstanceField<bool>(typeof(BallMovement), ballMovement, "onTrolley");
-            float initialDrag = GetInstanceField<float>(typeof(BallMovement), ballMovement, "initialDrag");
             GameObject hitPoint = GameObject.Find("HitPoint");
-            Vector3 playerPosition = new Vector3(
-                hitPoint.transform.position.x,
-                ballMovementTransform.position.y,
-                hitPoint.transform.position.z
-            );
-            rb.angularDrag = 1f;
-            rb.drag = initialDrag + ballMovement.sandDragToApply + ballMovement.waterDragToApply;
-            if (ballMovement.hitForce > 0f)
-            {
-                rb.AddForce(-(playerPosition - ballMovementTransform.position).normalized * (ballMovement.hitForce + 1f), ForceMode.Force);
-                if (!onTrolley) {
-                    ballMovement.hitCounter++;
-                }
-                ballMovementTime = 0f;
-                isTrackingBallMovementTime = true;
-            }
-            if (!outOfBounds && !onTrolley)
-            {
-                ballMovement.preHitLocation = ballMovementTransform.position;
-            }
-            ballMovement.hitForce = 0f;
+            hitPoint.SetActive(true);
+            ballMovement.menuUp = false;
+
+            // make it so cInput.GetKeyUp("Shoot") returns true
+            int hash = "Shoot".GetHashCode();
+            var inputNameHash = GetStaticField<Dictionary<int, int>>(typeof(cInput), "_inputNameHash");
+            int num = inputNameHash[hash];
+            var getKeyUpArray = GetStaticField<bool[]>(typeof(cInput), "_getKeyUpArray");
+            getKeyUpArray[num] = true;
         }
 
         public static void OnGUI()
@@ -493,16 +488,11 @@ namespace gwyfhelper
             GUILayout.EndArea();
         }
 
-        // don't currently need these
         public static void PreStart()
         {
             Debug.Log("PreStart called");
             prevHole = 1;
             cursorEnabled = false;
-            return;
-        }
-        public static void PreFixedUpdate()
-        {
             return;
         }
         public static void OnDestroy()
@@ -514,6 +504,11 @@ namespace gwyfhelper
             playerCamPivot = null;
             _Script = null;
 
+            return;
+        }
+        // don't currently need these
+        public static void PreFixedUpdate()
+        {
             return;
         }
         public static void LateUpdate()
