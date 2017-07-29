@@ -119,6 +119,12 @@ namespace gwyfpatcher
                 PrependMethodCall(methodToIntercept, methodToCall);
             }
 
+            // this is one of the first classes that loads
+            TypeDef SteamInvites = Mod.Find("SteamInvites", false);
+            var SteamInvitesStart = SteamInvites.FindMethod("Start");
+            var Entry = AddMethod(Mod, SteamInvites, GoFast, "Entry");
+            PrependMethodCall(SteamInvitesStart, Entry);
+
             string outputModulePath = GetOutputModulePath();
             Console.WriteLine("Writing file " + outputModulePath);
             Mod.Write(outputModulePath);

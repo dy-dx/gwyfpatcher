@@ -49,6 +49,9 @@
     <Reference Include="Microsoft.Scripting.Core">
       <HintPath>..\deps\Jint-fork-3.5-support\Microsoft.Scripting.Core.dll</HintPath>
     </Reference>
+    <Reference Include="FSWatcher">
+      <HintPath>..\deps\FSWatcher\FSWatcher.dll</HintPath>
+    </Reference>
   </ItemGroup>
   <ItemGroup>
     <Compile Include="GoFast.cs" />

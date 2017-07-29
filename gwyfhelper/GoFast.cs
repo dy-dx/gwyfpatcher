@@ -10,17 +10,17 @@ namespace gwyfhelper
     public class GoFast
     {
         // null these out on onDestroy
-        static BallMovement ballMovement;
-        static Transform ballMovementTransform;
-        static Rigidbody rb;
-        static GameObject playerCamPivot;
-        static GameObject _Script;
+        public static BallMovement ballMovement;
+        public static Transform ballMovementTransform;
+        public static Rigidbody rb;
+        public static GameObject playerCamPivot;
+        public static GameObject _Script;
 
         static int prevHole;
         static bool cursorEnabled;
 
         // shitty button logic
-        static bool shouldShoot;
+        public static bool shouldShoot;
         static bool guiResetHoleClicked;
         static bool shouldGoToPreviousHole;
         static bool shouldGoToNextHole;
@@ -121,14 +121,14 @@ namespace gwyfhelper
             return (T)type.GetField(fieldName, flags).GetValue(null);
         }
 
-        static int GetHole()
+        public static int GetHole()
         {
             // this doesn't work anymore, since private field names got obfuscated
             // return GetInstanceField<int>(typeof(BallMovement), ballMovement, "hole");
             Hashtable playerCustomProps = PhotonNetwork.player.CustomProperties;
             return (int)playerCustomProps["holeNumber"];
         }
-        static void SetHole(int val)
+        public static void SetHole(int val)
         {
             // this doesn't work anymore, since private field names got obfuscated
             // SetInstanceField<int>(typeof(BallMovement), ballMovement, "hole", val);
@@ -162,6 +162,8 @@ namespace gwyfhelper
             rb = playerBall.GetComponent<Rigidbody>();
             ballMovement = playerBall.GetComponent<BallMovement>();
             ballMovementTransform = ballMovement.transform;
+
+            JS.PreUpdate();
 
             if (guiLockHole)
             {
@@ -504,9 +506,6 @@ namespace gwyfhelper
             prevHole = 1;
             cursorEnabled = false;
 
-            JS.Initialize();
-            JS.Log("hello world");
-
             return;
         }
         public static void OnDestroy()
@@ -527,6 +526,12 @@ namespace gwyfhelper
         }
         public static void LateUpdate()
         {
+            return;
+        }
+        // just using this for testing
+        public static void Entry()
+        {
+            JS.Initialize();
             return;
         }
     }
