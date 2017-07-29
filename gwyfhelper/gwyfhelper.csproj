@@ -7,8 +7,6 @@
     <OutputType>Library</OutputType>
     <RootNamespace>gwyfhelper</RootNamespace>
     <AssemblyName>gwyfhelper</AssemblyName>
-    <TargetFrameworkVersion>v3.5</TargetFrameworkVersion>
-    <UseMSBuildEngine>false</UseMSBuildEngine>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>
@@ -52,11 +50,16 @@
     <Reference Include="FSWatcher">
       <HintPath>..\deps\FSWatcher\FSWatcher.dll</HintPath>
     </Reference>
+    <Reference Include="UnityEngine.UI">
+      <HintPath>..\deps\Managed\UnityEngine.UI.dll</HintPath>
+    </Reference>
   </ItemGroup>
   <ItemGroup>
     <Compile Include="GoFast.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="JS.cs" />
+    <Compile Include="Util.cs" />
+    <Compile Include="HelperGui.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
 </Project>

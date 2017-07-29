@@ -28,46 +28,103 @@ namespace gwyfhelper
             }
             engine = new Engine(cfg => cfg.AllowClr(AppDomain.CurrentDomain.GetAssemblies().ToArray()));
 
+            var noop = new Action<string>((s) => {});
             fsWatcher = new Watcher(
                 scriptDirectory,
-                (s) => { /* System.Console.WriteLine("Dir created " + s) */ },
-                (s) => { /* System.Console.WriteLine("Dir deleted " + s) */ },
-                OnFileCreated,
-                OnFileChanged,
-                (s) => { /* System.Console.WriteLine("File deleted " + s) */ }
+                noop, // dir created
+                noop, // dir deleted
+                OnFileChangedOrCreated, // file created
+                OnFileChangedOrCreated, // file changed
+                noop // file deleted
             );
 
             fsWatcher.Watch();
-
-            engine.Execute(@"
-                var UnityEngine = importNamespace('UnityEngine');
-                var gwyfhelper = importNamespace('gwyfhelper');
-            ");
 
             // todo: load all files in the dir
             LoadScript(Path.Combine(scriptDirectory, "index.js"));
         }
 
-        public static void OnFileChanged(string path)
+        public static void OnFileChangedOrCreated(string path)
         {
+            if (Path.GetExtension(path) != ".js")
+            {
+                return;
+            }
             System.Console.WriteLine("File changed " + path);
-            LoadScript(path);
-        }
-        public static void OnFileCreated(string path)
-        {
-            System.Console.WriteLine("File created " + path);
-            LoadScript(path);
+            LoadScript(path, true);
         }
 
-        public static void LoadScript(string path)
+        public static bool LoadScript(string path, bool callOnScriptReload = false)
         {
+            if (Path.GetExtension(path) != ".js")
+            {
+                return false;
+            }
+            if (!File.Exists(path))
+            {
+                // todo: throw
+                return false;
+            }
             var source = File.ReadAllText(path);
-            engine.Execute(source, new ParserOptions { Source = Path.GetFileName(path) });
+            var parserOptions = new ParserOptions { Source = Path.GetFileName(path) };
+
+            Util.HideAlert();
+            bool success = Execute(source, parserOptions);
+            if (success && callOnScriptReload)
+            {
+                success = Execute(@"
+                    OnScriptReload && OnScriptReload();
+                    OnScriptReload = null;
+                ", parserOptions);
+            }
+            return success;
         }
 
-        public static void PreUpdate()
+        public static bool Execute(string source, ParserOptions options = null)
         {
-            engine.Execute(@"index && index();");
+            try
+            {
+                engine.Execute(source, options);
+            }
+            catch (ParserException e)
+            {
+                Console.WriteLine(String.Join(
+                    Environment.NewLine,
+                    $"File: {e.Source} Line: {e.LineNumber} Column: {e.Column}",
+                    e.Description,
+                    e.StackTrace
+                ));
+                Util.Alert(e.Description);
+                return false;
+            }
+            catch (JavaScriptException e)
+            {
+                var obj = e.Error.ToObject() as ErrorInstance;
+                var description = (obj == null)
+                    ? e.Message
+                    : $"{obj.Get("name").AsString()} {obj.Get("message").AsString()}";
+                Console.WriteLine(String.Join(
+                    Environment.NewLine,
+                    $"File: {e.Location.Source} Line: {e.LineNumber} Column: {e.Column}",
+                    description,
+                    e.StackTrace
+                ));
+                Util.Alert(description);
+                return false;
+            }
+            catch(Exception e)
+            {
+                Console.WriteLine(e.ToString());
+                Util.Alert(e.GetType().Name);
+                return false;
+            }
+            return true;
+        }
+
+        // called during every BallMovement::PreUpdate
+        public static void Update()
+        {
+            Execute(@"index && index();");
         }
     }
 }

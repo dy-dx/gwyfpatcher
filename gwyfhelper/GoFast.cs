@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Reflection;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.SceneManagement;
@@ -11,75 +10,95 @@ namespace gwyfhelper
     {
         // null these out on onDestroy
         public static BallMovement ballMovement;
-        public static Transform ballMovementTransform;
         public static Rigidbody rb;
         public static GameObject playerCamPivot;
         public static GameObject _Script;
 
-        static int prevHole;
-        static bool cursorEnabled;
+        public static int prevHole;
+        public static bool cursorEnabled;
+        public static float timeSinceNewHole;
 
-        // shitty button logic
-        public static bool shouldShoot;
-        static bool guiResetHoleClicked;
-        static bool shouldGoToPreviousHole;
-        static bool shouldGoToNextHole;
-        static bool guiSkipIntermissions = true;
-        static bool guiLockHole;
-        static bool guiResetShotClicked;
-        static bool guiRetryShotClicked;
-        static bool guiUseHitForceSlider;
-        static bool guiUseDegreesSlider;
-        static float guiHitForceSliderInput;
-        static float guiDegreesSliderInput;
-        static string hitForceInput = "";
-        static string rotationInput = "";
+        public static bool _shouldShoot;
+        public static bool _shouldShootOnNextFrame;
 
-        static bool enableShootTimer;
-        static float timeUntilShouldShoot;
+        public static bool enableShootDelayTimer;
+        public static float shootDelayTimeout;
 
-        static bool isTrackingBallMovementTime;
-        static float ballMovementTime;
+        public static bool isTrackingBallMovementTime;
+        public static float ballMovementTime;
 
-        static Transform obstacleTransform;
-        static float obstacleRotationDegrees;
-        static bool guiObstacleRotationShootToggle;
-        static string guiObstacleRotationInput = "";
+        public static Transform obstacleTransform;
+        public static float obstacleRotationDegrees;
 
-        public GoFast()
+        public static void Shoot()
         {
+            if (enableShootDelayTimer)
+            {
+                return;
+            }
+            _shouldShoot = true; // handle on current/upcoming update
+        }
+        public static void ShootOnNextFrame()
+        {
+            _shouldShootOnNextFrame = true; // handle on next update
+        }
+        public static void ShootWithDelay(float s)
+        {
+            if (enableShootDelayTimer)
+            {
+                return;
+            }
+            enableShootDelayTimer = true;
+            shootDelayTimeout = s;
         }
 
-        // this doesn't work yet
-        public static void LogToScreen(string msg)
+        private static void _Shoot()
         {
-            // this.menuSystem.transform.Find("Spectating Text").gameObject.SetActive(true);
-            // this.menuSystem.transform.Find("Spectating Text").gameObject.GetComponent<Text>().text = "asdf";
+            if (ballMovement.hitForce <= 0f)
+            {
+                return;
+            }
+            // assume we successfully shot and we can start tracking movement time
+            // even though that may not be true
+            ballMovementTime = 0f;
+            isTrackingBallMovementTime = true;
 
-            // this.menuSystem.transform.Find("StrokeText").gameObject.SetActive(false);
-            // this.menuSystem.transform.Find("PowerOverlay").gameObject.SetActive(false);
-            // this.menuSystem.transform.Find("TimeText").gameObject.SetActive(false);
-            // this.menuSystem.transform.Find("EndGameTimer").gameObject.SetActive(true);
-            // this.menuSystem.transform.Find("EndGameTimer").GetComponent<Text>().text = "Returning to lobby in " + this.levelSelectIntermittion + " seconds";
-            MonoBehaviour.print(msg);
+            GameObject hitPoint = GameObject.Find("HitPoint");
+            hitPoint.SetActive(true);
+            ballMovement.menuUp = false;
+
+            // make it so cInput.GetKeyUp("Shoot") returns true
+            int hash = "Shoot".GetHashCode();
+            var inputNameHash = Util.GetStaticField<Dictionary<int, int>>(typeof(cInput), "_inputNameHash");
+            int num = inputNameHash[hash];
+            var getKeyUpArray = Util.GetStaticField<bool[]>(typeof(cInput), "_getKeyUpArray");
+            getKeyUpArray[num] = true;
         }
 
-        public static void LogObjects()
+        public static void ResetToSpawn()
         {
-            // MonoBehaviour[] allObjects = UnityEngine.Object.FindObjectsOfType<MonoBehaviour>();
-            // foreach(MonoBehaviour obj in allObjects)
-            // {
-            //     Debug.Log(obj+" is an active object");
-            // }
+            var holeObject = GameObject.Find("SpawnHole" + GetHole());
+            ResetToPosition(holeObject.transform.position);
 
-            // GameObject[] allObjects = UnityEngine.Object.FindObjectsOfType<GameObject>();
-            // foreach(GameObject obj in allObjects)
-            // {
-            //     Debug.Log(obj+" is an active object with tag: " + obj.tag);
-            // }
+            // ballMovement.transform.rotation = holeObject.transform.rotation;
+            // playerCamPivot.transform.rotation = holeObject.gameObject.transform.rotation;
+            // playerCamPivot.transform.Rotate(20f, 0f, 0f);
+
+            ballMovement.preHitLocation = holeObject.transform.position;
+            ballMovement.hitCounter = 0;
+            ballMovement.startIntermission = false;
         }
 
-        public static void SetCursorLock(bool enabled) {
+        public static void ResetToPosition(Vector3 pos)
+        {
+            rb.isKinematic = true;
+            rb.velocity = Vector3.zero;
+            ballMovement.transform.position = pos;
+            rb.isKinematic = false;
+        }
+
+        public static void SetCursorLock(bool enabled)
+        {
             // Menu.steamInviteUp = false seems to unlock the mouse cursor lol
             if (_Script != null)
             {
@@ -95,7 +114,7 @@ namespace gwyfhelper
             StaticRotator closest = null;
             foreach(var obj in rotators)
             {
-                float dist = Vector3.Distance(obj.transform.position, ballMovementTransform.position);
+                float dist = Vector3.Distance(obj.transform.position, ballMovement.transform.position);
                 if (dist < lowestDist)
                 {
                     lowestDist = dist;
@@ -103,22 +122,6 @@ namespace gwyfhelper
                 }
             }
             return closest;
-        }
-
-        static T GetInstanceField<T>(Type type, object instance, string fieldName)
-        {
-            BindingFlags flags = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic;
-            return (T)type.GetField(fieldName, flags).GetValue(instance);
-        }
-        static void SetInstanceField<T>(Type type, object instance, string fieldName, T value)
-        {
-            BindingFlags flags = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic;
-            type.GetField(fieldName, flags).SetValue(instance, value);
-        }
-        static T GetStaticField<T>(Type type, string fieldName)
-        {
-            BindingFlags flags = BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic;
-            return (T)type.GetField(fieldName, flags).GetValue(null);
         }
 
         public static int GetHole()
@@ -132,16 +135,40 @@ namespace gwyfhelper
         {
             // this doesn't work anymore, since private field names got obfuscated
             // SetInstanceField<int>(typeof(BallMovement), ballMovement, "hole", val);
-
             Hashtable playerCustomProps = PhotonNetwork.player.CustomProperties;
             playerCustomProps["holeNumber"] = val;
             ballMovement.currentHoleNumber = val;
+        }
+        public static bool OnNewHole()
+        {
+            return GetHole() != prevHole;
+        }
+        public static void SetHitForce(float hitForce)
+        {
+            ballMovement.hitForce = hitForce;
+        }
+        public static void SetDegrees(float degrees)
+        {
+            var angles = playerCamPivot.transform.rotation.eulerAngles;
+            playerCamPivot.transform.eulerAngles = new Vector3(angles.x, degrees, angles.z);
+        }
+        public static bool CanShoot()
+        {
+            return ballMovement != null &&
+                !ballMovement.inHole &&
+                !ballMovement.intermissionStarted &&
+                !ballMovement.startIntermission &&
+                (ballMovement.currentVelocity < ballMovement.minVelToHit || ballMovementTime > 0.5f);
+        }
+        public static string GetActiveSceneName()
+        {
+            return SceneManager.GetActiveScene().name;
         }
 
         public static void PreUpdate()
         {
             // from SteamInvites class
-            if (_Script == null && SceneManager.GetActiveScene().name != "MenuV2")
+            if (_Script == null && GetActiveSceneName() != "MenuV2")
             {
                 GameObject[] currentSceneGOArray = SceneManager.GetActiveScene().GetRootGameObjects();
                 for (int l = 0; l < (int)currentSceneGOArray.Length; l++)
@@ -161,21 +188,22 @@ namespace gwyfhelper
             GameObject playerBall = _Script.GetComponent<Menu>().playerBall;
             rb = playerBall.GetComponent<Rigidbody>();
             ballMovement = playerBall.GetComponent<BallMovement>();
-            ballMovementTransform = ballMovement.transform;
 
-            JS.PreUpdate();
+            if (OnNewHole()) {
+                timeSinceNewHole = 0f;
+            } else {
+                timeSinceNewHole += Time.deltaTime;
+            }
 
-            if (guiLockHole)
+            if (HelperGui.lockHole && prevHole != GetHole())
             {
-                if (prevHole != GetHole()) {
-                    SetHole(prevHole);
-                    ResetToSpawn();
-                }
+                SetHole(prevHole);
+                ResetToSpawn();
             }
 
             int hole = GetHole();
 
-            if (SceneManager.GetActiveScene().name == "ForestLevel") {
+            if (GetActiveSceneName() == "ForestLevel") {
                 if (hole == 4)
                 {
                     obstacleTransform = GetClosestRotator("Large_Spinner").transform;
@@ -205,19 +233,21 @@ namespace gwyfhelper
                     obstacleTransform = null;
                 }
 
-                if (obstacleTransform != null && guiObstacleRotationShootToggle) {
+                if (obstacleTransform != null && HelperGui.obstacleRotationShootToggle) {
                     float obstacleRotInput;
-                    bool parsedRot = float.TryParse(guiObstacleRotationInput, out obstacleRotInput);
-                    if (!String.IsNullOrEmpty(guiObstacleRotationInput) && parsedRot)
+                    bool parsedRot = float.TryParse(HelperGui.obstacleRotationInput, out obstacleRotInput);
+                    if (!String.IsNullOrEmpty(HelperGui.obstacleRotationInput) && parsedRot)
                     {
                         if (Math.Abs(obstacleRotationDegrees - obstacleRotInput) < 2f)
                         {
-                            shouldShoot = true;
-                            guiObstacleRotationShootToggle = false;
+                            Shoot();
+                            HelperGui.obstacleRotationShootToggle = false;
                         }
                     }
                 }
             }
+
+            JS.Update();
 
 
             if (isTrackingBallMovementTime)
@@ -233,7 +263,7 @@ namespace gwyfhelper
                 }
             }
 
-            if (guiSkipIntermissions)
+            if (HelperGui.skipIntermissions)
             {
                 if (ballMovement.intermissionStarted && !ballMovement.startIntermission)
                 {
@@ -242,57 +272,53 @@ namespace gwyfhelper
                 }
             }
 
-            if (enableShootTimer)
+            if (enableShootDelayTimer)
             {
-                timeUntilShouldShoot -= Time.deltaTime;
-                if (timeUntilShouldShoot < 0f)
+                shootDelayTimeout -= Time.deltaTime;
+                if (shootDelayTimeout <= 0f)
                 {
-                    shouldShoot = true;
-                    enableShootTimer = false;
+                    enableShootDelayTimer = false;
+                    Shoot();
                 }
             }
 
-            if (guiResetShotClicked)
+            if (HelperGui.resetShotClicked)
             {
                 ResetToPosition(ballMovement.preHitLocation);
-                guiResetShotClicked = false;
+                HelperGui.resetShotClicked = false;
             }
 
-            if (guiRetryShotClicked)
+            if (HelperGui.retryShotClicked)
             {
                 ResetToPosition(ballMovement.preHitLocation);
-                enableShootTimer = true;
-                timeUntilShouldShoot = 0.4f;
-                guiRetryShotClicked = false;
+                ShootWithDelay(0.4f);
+                HelperGui.retryShotClicked = false;
             }
 
-            // if (Input.GetKeyUp("j"))
-            if (shouldGoToPreviousHole)
+            if (HelperGui.skipToPreviousHoleClicked)
             {
                 if (hole > 1)
                 {
                     SetHole(hole - 1);
                 }
                 ResetToSpawn();
-                shouldGoToPreviousHole = false;
+                HelperGui.skipToPreviousHoleClicked = false;
             }
 
-            // if (Input.GetKeyUp("k"))
-            if (shouldGoToNextHole)
+            if (HelperGui.skipToNextHoleClicked)
             {
                 if (hole < 18)
                 {
                     SetHole(hole + 1);
-
                 }
                 ResetToSpawn();
-                shouldGoToNextHole = false;
+                HelperGui.skipToNextHoleClicked = false;
             }
 
-            if (guiResetHoleClicked)
+            if (HelperGui.resetHoleClicked)
             {
                 ResetToSpawn();
-                guiResetHoleClicked = false;
+                HelperGui.resetHoleClicked = false;
             }
 
             if (Input.GetKeyUp("left shift") || Input.GetKeyUp("right shift"))
@@ -302,209 +328,67 @@ namespace gwyfhelper
             SetCursorLock(cursorEnabled);
 
 
-            if (Input.GetKeyUp("u"))
+            if (HelperGui.useDegreesSlider)
             {
-                ballMovement.hitForce = ballMovement.hitForce - 1000f;
-            }
-            if (Input.GetKeyUp("i"))
-            {
-                ballMovement.hitForce = ballMovement.hitForce + 1000f;
-            }
-            if (Input.GetKeyUp("o"))
-            {
-                shouldShoot = true;
-            }
-
-            if (shouldShoot) {
-                Shoot();
-                shouldShoot = false;
-            }
-
-            if (guiUseDegreesSlider)
-            {
-                var angles = playerCamPivot.transform.rotation.eulerAngles;
-                playerCamPivot.transform.eulerAngles = new Vector3(angles.x, guiDegreesSliderInput, angles.z);
+                SetDegrees(HelperGui.degreesSliderInput);
             }
             else
             {
                 float newYRotation;
-                bool parsedRot = float.TryParse(rotationInput, out newYRotation);
-                if (!String.IsNullOrEmpty(rotationInput) && parsedRot)
+                bool parsedRot = float.TryParse(HelperGui.rotationInput, out newYRotation);
+                if (!String.IsNullOrEmpty(HelperGui.rotationInput) && parsedRot)
                 {
-                    var angles = playerCamPivot.transform.rotation.eulerAngles;
-                    playerCamPivot.transform.eulerAngles = new Vector3(angles.x, newYRotation, angles.z);
+                    SetDegrees(newYRotation);
                 }
             }
 
-            if (guiUseHitForceSlider)
+            if (HelperGui.useHitForceSlider)
             {
-                ballMovement.hitForce = guiHitForceSliderInput;
+                SetHitForce(HelperGui.hitForceSliderInput);
             }
             else
             {
                 float newHitForce;
-                bool parsedHitForce = float.TryParse(hitForceInput, out newHitForce);
-                if (!String.IsNullOrEmpty(hitForceInput) && parsedHitForce && !guiUseHitForceSlider)
+                bool parsedHitForce = float.TryParse(HelperGui.hitForceInput, out newHitForce);
+                if (!String.IsNullOrEmpty(HelperGui.hitForceInput) && parsedHitForce && !HelperGui.useHitForceSlider)
                 {
-                    ballMovement.hitForce = newHitForce;
+                    SetHitForce(newHitForce);
                 }
+            }
+
+
+            if (_shouldShoot)
+            {
+                _Shoot();
+                _shouldShoot = false;
+            }
+            if (_shouldShootOnNextFrame)
+            {
+                _shouldShoot = true;
+                _shouldShootOnNextFrame = false;
             }
 
             prevHole = GetHole();
         }
 
-        public static void ResetToSpawn()
-        {
-            var holeObject = GameObject.Find("SpawnHole" + GetHole());
-            ResetToPosition(holeObject.transform.position);
-
-            // ballMovementTransform.rotation = holeObject.transform.rotation;
-            // playerCamPivot.transform.rotation = holeObject.gameObject.transform.rotation;
-            // playerCamPivot.transform.Rotate(20f, 0f, 0f);
-
-            ballMovement.preHitLocation = holeObject.transform.position;
-        }
-
-        public static void ResetToPosition(Vector3 pos)
-        {
-            rb.isKinematic = true;
-            rb.velocity = Vector3.zero;
-            ballMovementTransform.position = pos;
-            rb.isKinematic = false;
-        }
-
-        public static void Shoot()
-        {
-            if (ballMovement.hitForce <= 0f)
-            {
-                return;
-            }
-            // assume we successfully shot and we can start tracking movement time
-            // even though that may not be true
-            ballMovementTime = 0f;
-            isTrackingBallMovementTime = true;
-
-            GameObject hitPoint = GameObject.Find("HitPoint");
-            hitPoint.SetActive(true);
-            ballMovement.menuUp = false;
-
-            // make it so cInput.GetKeyUp("Shoot") returns true
-            int hash = "Shoot".GetHashCode();
-            var inputNameHash = GetStaticField<Dictionary<int, int>>(typeof(cInput), "_inputNameHash");
-            int num = inputNameHash[hash];
-            var getKeyUpArray = GetStaticField<bool[]>(typeof(cInput), "_getKeyUpArray");
-            getKeyUpArray[num] = true;
-
-        }
-
         public static void OnGUI()
         {
-            if (ballMovement == null)
+            if (ballMovement != null)
             {
-                return;
+                HelperGui.OnGUI();
             }
-
-            // If you press esc, defocus the text fields
-            Event e = Event.current;
-            if (e.type == EventType.keyDown && e.keyCode == KeyCode.Escape)
-            {
-                GUI.FocusControl(null);
-            }
-
-            const float w = 250;
-            const float h = 500;
-            const float textFieldW = 65;
-            const float halfButtonW = ((w-10)/2);
-
-            GUILayout.BeginArea(new Rect (5, 5, w, h), GUI.skin.box);
-
-            GUILayout.Label("Current Hole: " + GetHole());
-            GUILayout.Label("Ball Movement Time: " + ballMovementTime);
-            GUILayout.Label("Ball Position: " + ballMovementTransform.position);
-            if (obstacleTransform != null)
-            {
-                GUILayout.Label("Obstacle Rotation: " + obstacleTransform.rotation.eulerAngles);
-                GUILayout.Label("Symmetric Rotation: " + obstacleRotationDegrees);
-                guiObstacleRotationShootToggle = GUILayout.Toggle(guiObstacleRotationShootToggle, "Shoot when rotation is:");
-                guiObstacleRotationInput = GUILayout.TextField(guiObstacleRotationInput, 10, GUILayout.Width(textFieldW));
-            }
-
-            GUILayout.BeginHorizontal();
-            float hitForceSource = ballMovement.hitForce;
-            // since it resets to 0 after shooting
-            if (hitForceSource == 0f)
-            {
-                hitForceSource = guiHitForceSliderInput;
-            }
-            hitForceInput = GUILayout.TextField(hitForceInput, 10, GUILayout.Width(textFieldW));
-            GUILayout.Label("hitForce: " + ballMovement.hitForce);
-            GUILayout.EndHorizontal();
-            guiUseHitForceSlider = GUILayout.Toggle(guiUseHitForceSlider, "Use Slider");
-            if (guiUseHitForceSlider)
-            {
-                guiHitForceSliderInput = GUILayout.HorizontalSlider(hitForceSource, 0f, 10500f);
-                hitForceInput = guiHitForceSliderInput.ToString();
-            }
-
-            GUILayout.BeginHorizontal();
-            float yDegrees = playerCamPivot.transform.rotation.eulerAngles.y;
-            string yDegreesString = yDegrees.ToString();
-            rotationInput = GUILayout.TextField(rotationInput, 10, GUILayout.Width(textFieldW));
-            GUILayout.Label("degrees: " + yDegreesString);
-            GUILayout.EndHorizontal();
-            guiUseDegreesSlider = GUILayout.Toggle(guiUseDegreesSlider, "Use Slider");
-            if (guiUseDegreesSlider)
-            {
-                guiDegreesSliderInput = GUILayout.HorizontalSlider(yDegrees, 0f, 360f);
-                rotationInput = yDegreesString;
-            }
-
-            GUILayout.BeginHorizontal();
-            if (GUILayout.Button("Retry Shot", GUILayout.Width(halfButtonW)))
-            {
-                guiRetryShotClicked = true;
-            }
-            if (GUILayout.Button("Shoot", GUILayout.Width(halfButtonW)))
-            {
-                shouldShoot = true;
-            }
-            GUILayout.EndHorizontal();
-
-            GUILayout.BeginHorizontal();
-            if (GUILayout.Button("Reset shot", GUILayout.Width(halfButtonW)))
-            {
-                guiResetShotClicked = true;
-            }
-            if (GUILayout.Button("Reset hole", GUILayout.Width(halfButtonW)))
-            {
-                guiResetHoleClicked = true;
-            }
-            GUILayout.EndHorizontal();
-
-            GUILayout.BeginHorizontal();
-            if (GUILayout.Button("Previous hole", GUILayout.Width(halfButtonW)))
-            {
-                shouldGoToPreviousHole = true;
-            }
-            if (GUILayout.Button("Next hole", GUILayout.Width(halfButtonW)))
-            {
-                shouldGoToNextHole = true;
-            }
-            GUILayout.EndHorizontal();
-
-            GUILayout.BeginHorizontal();
-            guiSkipIntermissions = GUILayout.Toggle(guiSkipIntermissions, "Skip Intermissions");
-            GUILayout.EndHorizontal();
-            guiLockHole = GUILayout.Toggle(guiLockHole, "Lock Current Hole");
-
-            GUILayout.EndArea();
         }
 
         public static void PreStart()
         {
             Debug.Log("PreStart called");
-            prevHole = 1;
             cursorEnabled = false;
+            prevHole = 1;
+            timeSinceNewHole = 0f;
+            isTrackingBallMovementTime = false;
+            ballMovementTime = 0f;
+            enableShootDelayTimer = false;
+            shootDelayTimeout = 0f;
 
             return;
         }
@@ -512,7 +396,6 @@ namespace gwyfhelper
         {
             Debug.Log("OnDestroy called");
             ballMovement = null;
-            ballMovementTransform = null;
             rb = null;
             playerCamPivot = null;
             _Script = null;
