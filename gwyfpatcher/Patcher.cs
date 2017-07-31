@@ -6,7 +6,7 @@ using dnlib.DotNet.Emit;
 
 namespace gwyfpatcher
 {
-    class MainClass
+    class Patcher
     {
         public static string ModuleFileName = "Assembly-CSharp.dll";
         public static string HelperModuleFileName = "gwyfhelper.dll";
