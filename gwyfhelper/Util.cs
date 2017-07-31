@@ -1,5 +1,6 @@
 ﻿using System;
-using BindingFlags = System.Reflection.BindingFlags;
+using System.IO;
+using System.Reflection;
 using UnityEngine;
 
 namespace gwyfhelper
@@ -22,6 +23,13 @@ namespace gwyfhelper
         {
             BindingFlags flags = BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic;
             return (T)type.GetField(fieldName, flags).GetValue(null);
+        }
+
+        public static string GetCurrentDLLDirectory()
+        {
+            return Path.GetDirectoryName(
+                System.Reflection.Assembly.GetExecutingAssembly().Location
+            );
         }
 
         public static void LogObjects()

@@ -18,7 +18,7 @@ namespace gwyfhelper
     {
         public static Engine engine;
         public static Watcher fsWatcher;
-        public static string scriptDirectory = "/Users/chris/projects/gwyfpatcher/gwyfhelper/js";
+        public static string scriptDirectory;
 
         public static void Initialize()
         {
@@ -27,6 +27,11 @@ namespace gwyfhelper
                 return;
             }
             engine = new Engine(cfg => cfg.AllowClr(AppDomain.CurrentDomain.GetAssemblies().ToArray()));
+
+            scriptDirectory = Path.Combine(Util.GetCurrentDLLDirectory(), "js");
+            if (!Directory.Exists(scriptDirectory)) {
+                scriptDirectory = "/Users/chris/projects/gwyfpatcher/gwyfhelper/js";
+            }
 
             var noop = new Action<string>((s) => {});
             fsWatcher = new Watcher(
