@@ -4,8 +4,11 @@ namespace gwyfhelper
 {
     public class HelperGui
     {
+        public static bool enabled = true;
+
         public static bool skipIntermissions;
         public static bool lockHole;
+        public static bool toggleShowExtraInfo;
         public static bool resetHoleClicked;
         public static bool resetShotClicked;
         public static bool retryShotClicked;
@@ -26,6 +29,11 @@ namespace gwyfhelper
 
         public static void OnGUI()
         {
+            if (!enabled)
+            {
+                return;
+            }
+
             // If you press esc, defocus the text fields
             Event e = Event.current;
             if (e.type == EventType.keyDown && e.keyCode == KeyCode.Escape)
@@ -34,7 +42,7 @@ namespace gwyfhelper
             }
 
             const float w = 250;
-            const float h = 600;
+            const float h = 560;
             const float textFieldW = 65;
             const float halfButtonW = ((w - 10) / 2);
 
@@ -110,6 +118,7 @@ namespace gwyfhelper
             skipIntermissions = GUILayout.Toggle(skipIntermissions, "Skip Intermissions");
             GUILayout.EndHorizontal();
             lockHole = GUILayout.Toggle(lockHole, "Lock Current Hole");
+            toggleShowExtraInfo = GUILayout.Toggle(toggleShowExtraInfo, "Show Extra Info");
 
 
             if (GoFast.obstacleTransform != null)
@@ -139,12 +148,15 @@ namespace gwyfhelper
             }
 
 
-            GUILayout.Label("Ball Position: " + GoFast.ballMovement.transform.position);
-            if (GoFast.objectMouseIsOver != null)
+            if (toggleShowExtraInfo)
             {
-                GUILayout.Label("Cursor is over: " + GoFast.objectMouseIsOver.name);
-                GUILayout.Label("  Pos: " + GoFast.objectMouseIsOver.transform.position);
-                GUILayout.Label("  Euler: " + GoFast.objectMouseIsOver.transform.rotation.eulerAngles);
+                GUILayout.Label("Ball Position: " + GoFast.ballMovement.transform.position);
+                if (GoFast.objectMouseIsOver != null)
+                {
+                    GUILayout.Label("Cursor is over: " + GoFast.objectMouseIsOver.name);
+                    GUILayout.Label("  Pos: " + GoFast.objectMouseIsOver.transform.position);
+                    GUILayout.Label("  Euler: " + GoFast.objectMouseIsOver.transform.rotation.eulerAngles);
+                }
             }
 
             GUILayout.EndArea();

@@ -58,7 +58,7 @@ namespace gwyfhelper
             // this.menuSystem.transform.Find("TimeText").gameObject.SetActive(false);
             // this.menuSystem.transform.Find("EndGameTimer").gameObject.SetActive(true);
             // this.menuSystem.transform.Find("EndGameTimer").GetComponent<Text>().text = "Returning to lobby in " + this.levelSelectIntermittion + " seconds";
-            MonoBehaviour.print(msg);
+            Console.WriteLine(msg);
         }
 
         public static void Alert(string msg)

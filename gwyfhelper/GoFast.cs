@@ -12,8 +12,12 @@ namespace gwyfhelper
         public static BallMovement ballMovement;
         public static Rigidbody rb;
         public static GameObject playerCamPivot;
+        public static GameObject hitPoint;
         public static GameObject _Script;
         public static GameObject objectMouseIsOver;
+
+        public static Vector3 prevHitPointPosition;
+        public static float hitPointDistanceMoved;
 
         public static int prevHole;
         public static bool cursorEnabled;
@@ -66,7 +70,7 @@ namespace gwyfhelper
             ballMovementTime = 0f;
             isTrackingBallMovementTime = true;
 
-            GameObject hitPoint = GameObject.Find("HitPoint");
+
             hitPoint.SetActive(true);
             ballMovement.menuUp = false;
 
@@ -197,7 +201,7 @@ namespace gwyfhelper
                 !ballMovement.inHole &&
                 !ballMovement.intermissionStarted &&
                 !ballMovement.startIntermission &&
-                (ballMovement.currentVelocity < ballMovement.minVelToHit || ballMovementTime > 0.5f);
+                (ballMovement.currentVelocity < ballMovement.minVelToHit);
         }
         public static string GetActiveSceneName()
         {
@@ -217,16 +221,23 @@ namespace gwyfhelper
                         _Script = currentSceneGOArray[l];
                     }
                 }
+                playerCamPivot = _Script.GetComponent<Menu>().playerCamPivot;
+                GameObject playerBall = _Script.GetComponent<Menu>().playerBall;
+                rb = playerBall.GetComponent<Rigidbody>();
+                ballMovement = playerBall.GetComponent<BallMovement>();
+                hitPoint = GameObject.Find("HitPoint");
             }
             if (_Script == null)
             {
                 return;
             }
 
-            playerCamPivot = _Script.GetComponent<Menu>().playerCamPivot;
-            GameObject playerBall = _Script.GetComponent<Menu>().playerBall;
-            rb = playerBall.GetComponent<Rigidbody>();
-            ballMovement = playerBall.GetComponent<BallMovement>();
+            if (prevHitPointPosition != null)
+            {
+                hitPointDistanceMoved = Vector3.Distance(prevHitPointPosition, hitPoint.transform.position);
+            }
+            prevHitPointPosition = hitPoint.transform.position;
+
 
             if (OnNewHole()) {
                 timeSinceNewHole = 0f;
@@ -245,19 +256,28 @@ namespace gwyfhelper
             if (GetActiveSceneName() == "ForestLevel") {
                 if (hole == 4)
                 {
-                    obstacleTransform = GetClosestRotator("Large_Spinner").transform;
+                    if (obstacleTransform == null || obstacleTransform.gameObject.name != "Large_Spinner_1")
+                    {
+                        obstacleTransform = GetClosestRotator("Large_Spinner").transform;
+                    }
                     obstacleMovementAmount = obstacleTransform.eulerAngles.z % 180;
                 }
                 else if (hole == 8)
                 {
-                    obstacleTransform = GetClosestRotator("Misc_smallSpinner").transform;
+                    if (obstacleTransform == null || obstacleTransform.gameObject.name != "Misc_smallSpinner")
+                    {
+                        obstacleTransform = GetClosestRotator("Misc_smallSpinner").transform;
+                    }
                     // a hack to make the euler angles get calculated correctly
                     obstacleTransform.eulerAngles = new Vector3(270, obstacleTransform.eulerAngles.y, obstacleTransform.eulerAngles.z);
                     obstacleMovementAmount = obstacleTransform.eulerAngles.y % 180;
                 }
                 else if (hole == 9)
                 {
-                    obstacleTransform = GetClosestRotator("Windmill_Blades").transform;
+                    if (obstacleTransform == null || obstacleTransform.gameObject.name != "Windmill_Blades")
+                    {
+                        obstacleTransform = GetClosestRotator("Windmill_Blades").transform;
+                    }
                     // idk
                     float pitchAngle = Vector3.Angle(new Vector3(obstacleTransform.forward.x, 0, obstacleTransform.forward.z), obstacleTransform.forward);
                     obstacleMovementAmount = pitchAngle;
@@ -274,19 +294,6 @@ namespace gwyfhelper
                     }
                     obstacleMovementAmount = obstacleTransform.eulerAngles.y % 180;
                     secondObstacleMovementAmount = secondObstacleTransform.eulerAngles.y % 180;
-                    if (Input.GetKeyDown("o"))
-                    {
-                        var pos = obstacleTransform.position;
-                        if (pos.y < 5f)
-                        {
-                            pos.y += 5f;
-                        }
-                        else
-                        {
-                            pos.y -= 5f;
-                        }
-                        obstacleTransform.position = pos;
-                    }
                 }
                 else if (hole == 16)
                 {
@@ -309,6 +316,20 @@ namespace gwyfhelper
                 if (hole != 10)
                 {
                     secondObstacleTransform = null;
+                }
+
+                if (obstacleTransform != null && Input.GetKeyDown("o"))
+                {
+                    var pos = obstacleTransform.position;
+                    if (pos.y < 5f)
+                    {
+                        pos.y += 5f;
+                    }
+                    else
+                    {
+                        pos.y -= 5f;
+                    }
+                    obstacleTransform.position = pos;
                 }
 
                 if (obstacleTransform != null && HelperGui.obstacleMovementShootToggle) {
@@ -349,10 +370,17 @@ namespace gwyfhelper
                 }
             }
 
-            objectMouseIsOver = Util.GetGameObjectCursorIsOver();
+            if (HelperGui.toggleShowExtraInfo)
+            {
+                objectMouseIsOver = Util.GetGameObjectCursorIsOver();
+            }
 
             JS.Update();
 
+
+            if (Input.GetKeyDown("h")) {
+              HelperGui.enabled = !HelperGui.enabled;
+            }
 
             if (isTrackingBallMovementTime)
             {
@@ -429,6 +457,10 @@ namespace gwyfhelper
             {
                 cursorEnabled = !cursorEnabled;
             }
+            if (!HelperGui.enabled)
+            {
+                cursorEnabled = false;
+            }
             SetCursorLock(cursorEnabled);
 
 
@@ -485,7 +517,7 @@ namespace gwyfhelper
 
         public static void PreStart()
         {
-            Debug.Log("PreStart called");
+            Console.WriteLine("PreStart called");
             cursorEnabled = false;
             prevHole = 1;
             timeSinceNewHole = 0f;
@@ -498,10 +530,11 @@ namespace gwyfhelper
         }
         public static void OnDestroy()
         {
-            Debug.Log("OnDestroy called");
+            Console.WriteLine("OnDestroy called");
             ballMovement = null;
             rb = null;
             playerCamPivot = null;
+            hitPoint = null;
             _Script = null;
             objectMouseIsOver = null;
 
