@@ -82,5 +82,17 @@ namespace gwyfhelper
             }
             steamInvites.text.transform.parent.gameObject.SetActive(false);
         }
+
+        public static GameObject GetGameObjectCursorIsOver()
+        {
+            Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);
+            RaycastHit hit;
+
+            if (Physics.Raycast(ray, out hit, 100))
+            {
+                return hit.transform.gameObject;
+            }
+            return null;
+        }
     }
 }

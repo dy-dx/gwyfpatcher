@@ -13,6 +13,7 @@ namespace gwyfhelper
         public static Rigidbody rb;
         public static GameObject playerCamPivot;
         public static GameObject _Script;
+        public static GameObject objectMouseIsOver;
 
         public static int prevHole;
         public static bool cursorEnabled;
@@ -28,7 +29,9 @@ namespace gwyfhelper
         public static float ballMovementTime;
 
         public static Transform obstacleTransform;
-        public static float obstacleRotationDegrees;
+        public static float obstacleMovementAmount;
+        public static Transform secondObstacleTransform;
+        public static float secondObstacleMovementAmount;
 
         public static void Shoot()
         {
@@ -124,6 +127,42 @@ namespace gwyfhelper
             return closest;
         }
 
+        public static PingPongMotion GetClosestPingPongMotion(string name)
+        {
+            PingPongMotion[] allObjs = UnityEngine.Object.FindObjectsOfType<PingPongMotion>();
+            PingPongMotion[] objs = Array.FindAll(allObjs, o => o.name.StartsWith(name));
+            float lowestDist = Single.PositiveInfinity;
+            PingPongMotion closest = null;
+            foreach(var obj in objs)
+            {
+                float dist = Vector3.Distance(obj.transform.position, ballMovement.transform.position);
+                if (dist < lowestDist)
+                {
+                    lowestDist = dist;
+                    closest = obj;
+                }
+            }
+            return closest;
+        }
+
+        public static GameObject GetNewestLog()
+        {
+            DeleteAfterSeconds[] allObjs = UnityEngine.Object.FindObjectsOfType<DeleteAfterSeconds>();
+            DeleteAfterSeconds[] objs = Array.FindAll(allObjs, r => r.name.StartsWith("Animated_Log"));
+            float lowestZ = Single.PositiveInfinity;
+            GameObject newestObj = null;
+            foreach(var obj in objs)
+            {
+                float z = obj.transform.position.z;
+                if (z < lowestZ)
+                {
+                    lowestZ = z;
+                    newestObj = obj.gameObject;
+                }
+            }
+            return newestObj;
+        }
+
         public static int GetHole()
         {
             // this doesn't work anymore, since private field names got obfuscated
@@ -207,45 +246,110 @@ namespace gwyfhelper
                 if (hole == 4)
                 {
                     obstacleTransform = GetClosestRotator("Large_Spinner").transform;
-                    obstacleRotationDegrees = obstacleTransform.eulerAngles.z % 180;
+                    obstacleMovementAmount = obstacleTransform.eulerAngles.z % 180;
                 }
                 else if (hole == 8)
                 {
                     obstacleTransform = GetClosestRotator("Misc_smallSpinner").transform;
                     // a hack to make the euler angles get calculated correctly
                     obstacleTransform.eulerAngles = new Vector3(270, obstacleTransform.eulerAngles.y, obstacleTransform.eulerAngles.z);
-                    obstacleRotationDegrees = obstacleTransform.eulerAngles.y % 180;
+                    obstacleMovementAmount = obstacleTransform.eulerAngles.y % 180;
                 }
                 else if (hole == 9)
                 {
                     obstacleTransform = GetClosestRotator("Windmill_Blades").transform;
                     // idk
                     float pitchAngle = Vector3.Angle(new Vector3(obstacleTransform.forward.x, 0, obstacleTransform.forward.z), obstacleTransform.forward);
-                    obstacleRotationDegrees = pitchAngle;
+                    obstacleMovementAmount = pitchAngle;
                 }
                 else if (hole == 10)
                 {
-                    obstacleTransform = GetClosestRotator("Large_Spinner").transform;
-                    obstacleRotationDegrees = obstacleTransform.eulerAngles.y % 180;
+                    if (obstacleTransform == null || obstacleTransform.gameObject.name != "Large_Spinner_4")
+                    {
+                        obstacleTransform = GameObject.Find("Large_Spinner_4").transform;
+                    }
+                    if (secondObstacleTransform == null || secondObstacleTransform.gameObject.name != "Large_Spinner_3")
+                    {
+                        secondObstacleTransform = GameObject.Find("Large_Spinner_3").transform;
+                    }
+                    obstacleMovementAmount = obstacleTransform.eulerAngles.y % 180;
+                    secondObstacleMovementAmount = secondObstacleTransform.eulerAngles.y % 180;
+                    if (Input.GetKeyDown("o"))
+                    {
+                        var pos = obstacleTransform.position;
+                        if (pos.y < 5f)
+                        {
+                            pos.y += 5f;
+                        }
+                        else
+                        {
+                            pos.y -= 5f;
+                        }
+                        obstacleTransform.position = pos;
+                    }
+                }
+                else if (hole == 16)
+                {
+                    if (obstacleTransform == null || !obstacleTransform.gameObject.name.StartsWith("Misc_Divider"))
+                    {
+                        obstacleTransform = GetClosestPingPongMotion("Misc_Divider").transform;
+                    }
+                    obstacleMovementAmount = obstacleTransform.position.z;
+                }
+                else if (hole == 18)
+                {
+                    obstacleTransform = GetNewestLog().transform;
+                    obstacleMovementAmount = obstacleTransform.position.z;
                 }
                 else
                 {
                     obstacleTransform = null;
                 }
 
-                if (obstacleTransform != null && HelperGui.obstacleRotationShootToggle) {
-                    float obstacleRotInput;
-                    bool parsedRot = float.TryParse(HelperGui.obstacleRotationInput, out obstacleRotInput);
-                    if (!String.IsNullOrEmpty(HelperGui.obstacleRotationInput) && parsedRot)
+                if (hole != 10)
+                {
+                    secondObstacleTransform = null;
+                }
+
+                if (obstacleTransform != null && HelperGui.obstacleMovementShootToggle) {
+                    float obstacleMovementMin;
+                    float obstacleMovementMax;
+                    bool isParsed = float.TryParse(HelperGui.obstacleMovementInput, out obstacleMovementMin);
+                    bool isParsed2 = float.TryParse(HelperGui.obstacleMovementInput2, out obstacleMovementMax);
+
+                    bool isShotClear = (
+                        isParsed &&
+                        isParsed2 &&
+                        !String.IsNullOrEmpty(HelperGui.obstacleMovementInput) &&
+                        !String.IsNullOrEmpty(HelperGui.obstacleMovementInput2) &&
+                        obstacleMovementAmount >= obstacleMovementMin &&
+                        obstacleMovementAmount <= obstacleMovementMax
+                    );
+
+                    if (isShotClear && secondObstacleTransform != null) {
+                        float secondObstacleMovementMin;
+                        float secondObstacleMovementMax;
+                        bool secondIsParsed = float.TryParse(HelperGui.secondObstacleMovementInput, out secondObstacleMovementMin);
+                        bool secondIsParsed2 = float.TryParse(HelperGui.secondObstacleMovementInput2, out secondObstacleMovementMax);
+                        isShotClear = (
+                            secondIsParsed &&
+                            secondIsParsed2 &&
+                            !String.IsNullOrEmpty(HelperGui.secondObstacleMovementInput) &&
+                            !String.IsNullOrEmpty(HelperGui.secondObstacleMovementInput2) &&
+                            secondObstacleMovementAmount >= secondObstacleMovementMin &&
+                            secondObstacleMovementAmount <= secondObstacleMovementMax
+                        );
+                    }
+
+                    if (isShotClear)
                     {
-                        if (Math.Abs(obstacleRotationDegrees - obstacleRotInput) < 2f)
-                        {
-                            Shoot();
-                            HelperGui.obstacleRotationShootToggle = false;
-                        }
+                        Shoot();
+                        HelperGui.obstacleMovementShootToggle = false;
                     }
                 }
             }
+
+            objectMouseIsOver = Util.GetGameObjectCursorIsOver();
 
             JS.Update();
 
@@ -399,6 +503,7 @@ namespace gwyfhelper
             rb = null;
             playerCamPivot = null;
             _Script = null;
+            objectMouseIsOver = null;
 
             return;
         }

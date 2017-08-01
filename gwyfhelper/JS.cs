@@ -78,8 +78,10 @@ namespace gwyfhelper
             if (success && callOnScriptReload)
             {
                 success = Execute(@"
-                    OnScriptReload && OnScriptReload();
-                    OnScriptReload = null;
+                    if (typeof global !== 'undefined') {
+                        global.OnScriptReload && global.OnScriptReload();
+                        global.OnScriptReload = null;
+                    }
                 ", parserOptions);
             }
             return success;
@@ -129,7 +131,11 @@ namespace gwyfhelper
         // called during every BallMovement::PreUpdate
         public static void Update()
         {
-            Execute(@"index && index();");
+            Execute(@"
+                if (typeof global !== 'undefined') {
+                    global.index && global.index();
+                }
+            ");
         }
     }
 }

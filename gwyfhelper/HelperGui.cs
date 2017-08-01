@@ -18,8 +18,11 @@ namespace gwyfhelper
         public static string hitForceInput = "";
         public static string rotationInput = "";
 
-        public static bool obstacleRotationShootToggle;
-        public static string obstacleRotationInput = "";
+        public static bool obstacleMovementShootToggle;
+        public static string obstacleMovementInput = "";
+        public static string obstacleMovementInput2 = "";
+        public static string secondObstacleMovementInput = "";
+        public static string secondObstacleMovementInput2 = "";
 
         public static void OnGUI()
         {
@@ -31,7 +34,7 @@ namespace gwyfhelper
             }
 
             const float w = 250;
-            const float h = 500;
+            const float h = 600;
             const float textFieldW = 65;
             const float halfButtonW = ((w - 10) / 2);
 
@@ -39,14 +42,6 @@ namespace gwyfhelper
 
             GUILayout.Label("Current Hole: " + GoFast.GetHole());
             GUILayout.Label("Ball Movement Time: " + GoFast.ballMovementTime);
-            GUILayout.Label("Ball Position: " + GoFast.ballMovement.transform.position);
-            if (GoFast.obstacleTransform != null)
-            {
-                GUILayout.Label("Obstacle Rotation: " + GoFast.obstacleTransform.rotation.eulerAngles);
-                GUILayout.Label("Symmetric Rotation: " + GoFast.obstacleRotationDegrees);
-                obstacleRotationShootToggle = GUILayout.Toggle(obstacleRotationShootToggle, "Shoot when rotation is:");
-                obstacleRotationInput = GUILayout.TextField(obstacleRotationInput, 10, GUILayout.Width(textFieldW));
-            }
 
             GUILayout.BeginHorizontal();
             float hitForceSource = GoFast.ballMovement.hitForce;
@@ -115,6 +110,42 @@ namespace gwyfhelper
             skipIntermissions = GUILayout.Toggle(skipIntermissions, "Skip Intermissions");
             GUILayout.EndHorizontal();
             lockHole = GUILayout.Toggle(lockHole, "Lock Current Hole");
+
+
+            if (GoFast.obstacleTransform != null)
+            {
+                // GUILayout.Label("Obstacle Name: " + GoFast.obstacleTransform.gameObject.name);
+                GUILayout.Label("Obstacle mvmt: " + GoFast.obstacleMovementAmount);
+            }
+            if (GoFast.secondObstacleTransform != null)
+            {
+                // GUILayout.Label("2nd Obstacle Name: " + GoFast.secondObstacleTransform.gameObject.name);
+                GUILayout.Label("2nd Obstacle mvmt: " + GoFast.secondObstacleMovementAmount);
+            }
+            if (GoFast.obstacleTransform != null)
+            {
+                obstacleMovementShootToggle = GUILayout.Toggle(obstacleMovementShootToggle, "Shoot when movement is between:");
+                GUILayout.BeginHorizontal();
+                obstacleMovementInput = GUILayout.TextField(obstacleMovementInput, 10, GUILayout.Width(textFieldW));
+                obstacleMovementInput2 = GUILayout.TextField(obstacleMovementInput2, 10, GUILayout.Width(textFieldW));
+                GUILayout.EndHorizontal();
+            }
+            if (GoFast.secondObstacleTransform != null)
+            {
+                GUILayout.BeginHorizontal();
+                secondObstacleMovementInput = GUILayout.TextField(secondObstacleMovementInput, 10, GUILayout.Width(textFieldW));
+                secondObstacleMovementInput2 = GUILayout.TextField(secondObstacleMovementInput2, 10, GUILayout.Width(textFieldW));
+                GUILayout.EndHorizontal();
+            }
+
+
+            GUILayout.Label("Ball Position: " + GoFast.ballMovement.transform.position);
+            if (GoFast.objectMouseIsOver != null)
+            {
+                GUILayout.Label("Cursor is over: " + GoFast.objectMouseIsOver.name);
+                GUILayout.Label("  Pos: " + GoFast.objectMouseIsOver.transform.position);
+                GUILayout.Label("  Euler: " + GoFast.objectMouseIsOver.transform.rotation.eulerAngles);
+            }
 
             GUILayout.EndArea();
         }
